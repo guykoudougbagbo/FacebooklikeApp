@@ -1,0 +1,27 @@
+.site-header {
+  position: sticky;
+  top: 0;
+  z-index: 10;
+  display: flex;
+  align-items: center;
+  padding: 4px 16px;
+  /* Matches the logo's own black background so the image edges disappear. */
+  background: #000;
+  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.4);
+}
+
+.site-header__home {
+  display: inline-flex;
+  border-radius: 8px;
+
+  &:focus-visible {
+    outline: 2px solid var(--accent);
+    outline-offset: 2px;
+  }
+}
+
+.site-header__logo {
+  display: block;
+  height: 64px;
+  width: auto;
+}
