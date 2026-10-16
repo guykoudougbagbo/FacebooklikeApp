@@ -4,6 +4,23 @@ import { api } from '../api/client'
 import { Button, Card, ErrorMessage, Loading, TextField } from '../components/ui'
 import { formatDateTime } from '../utils/format'
 
+function PasswordFields() {
+  return (
+    <>
+      <TextField
+        label="Mot de passe"
+        name="password"
+        type="password"
+        autoComplete="new-password"
+        hint="Au moins 8 caractères. Évitez les mots de passe courants."
+        required
+        minLength={8}
+      />
+      <TextField label="Confirmez le mot de passe" name="password_again" type="password" autoComplete="new-password" required />
+    </>
+  )
+}
+
 export default function InvitePage() {
   const token = useLocation().hash.slice(1)
   const navigate = useNavigate()
@@ -29,15 +46,19 @@ export default function InvitePage() {
     setBusy(true)
     setError('')
     try {
-      await api('/invites/accept/', {
-        method: 'POST',
-        body: {
-          token,
-          display_name: form.get('display_name'),
-          email: form.get('email'),
-          password: form.get('password'),
-        },
-      })
+      if (invite.kind === 'reactivate') {
+        await api('/invites/reactivate/', { method: 'POST', body: { token, password: form.get('password') } })
+      } else {
+        await api('/invites/accept/', {
+          method: 'POST',
+          body: {
+            token,
+            display_name: form.get('display_name'),
+            email: form.get('email'),
+            password: form.get('password'),
+          },
+        })
+      }
       navigate('/connexion/securite')
     } catch (err) {
       setError(err.message)
@@ -54,6 +75,22 @@ export default function InvitePage() {
   }
   if (!invite) return <Loading />
 
+  if (invite.kind === 'reactivate') {
+    return (
+      <Card title="Réactivez votre compte">
+        <p>
+          Bonjour {invite.display_name}. Choisissez un nouveau mot de passe pour {invite.email}. Vous configurerez
+          ensuite à nouveau votre application d'authentification. Ce lien est valable jusqu'au {formatDateTime(invite.expires_at)}.
+        </p>
+        <form onSubmit={handleSubmit}>
+          <ErrorMessage>{error}</ErrorMessage>
+          <PasswordFields />
+          <Button type="submit" busy={busy}>Réactiver mon compte</Button>
+        </form>
+      </Card>
+    )
+  }
+
   return (
     <Card title="Rejoindre l'équipe des administrateurs">
       <p>Cette invitation est valable jusqu'au {formatDateTime(invite.expires_at)}.</p>
@@ -61,16 +98,7 @@ export default function InvitePage() {
         <ErrorMessage>{error}</ErrorMessage>
         <TextField label="Votre nom" name="display_name" autoComplete="name" required minLength={2} maxLength={80} />
         <TextField label="Adresse e-mail" name="email" type="email" autoComplete="email" required />
-        <TextField
-          label="Mot de passe"
-          name="password"
-          type="password"
-          autoComplete="new-password"
-          hint="Au moins 8 caractères. Évitez les mots de passe courants."
-          required
-          minLength={8}
-        />
-        <TextField label="Confirmez le mot de passe" name="password_again" type="password" autoComplete="new-password" required />
+        <PasswordFields />
         <Button type="submit" busy={busy}>Créer mon compte</Button>
       </form>
     </Card>

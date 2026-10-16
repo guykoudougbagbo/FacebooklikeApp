@@ -22,8 +22,9 @@ All paths start with `/api/`. Routes are defined in `Backend/accounts/urls.py` a
 
 | Method | Path | Who can call it | Notes |
 |--------|------|-----------------|-------|
-| POST | `invites/check/` | Public (holder of the link) | Body `{"token"}`. 404 when the link is unknown, used, revoked or expired. |
-| POST | `invites/accept/` | Public (holder of the link) | Creates the admin account; next step is always `setup`. |
+| POST | `invites/check/` | Public (holder of the link) | Body `{"token"}`. 404 when the link is unknown, used, revoked or expired. Answers `kind`: `new`, or `reactivate` with the former admin's name and email. |
+| POST | `invites/accept/` | Public (holder of a `new` link) | Creates the admin account; next step is always `setup`. Refuses the email of a removed admin (they must use their own re-invite link). |
+| POST | `invites/reactivate/` | Public (holder of a `reactivate` link) | Body `{"token", "password"}`. Switches that one removed admin back on with the new password; their old authenticator app, recovery codes and sessions are erased. Next step is always `setup`. |
 
 ## Managing admins
 
@@ -35,4 +36,6 @@ All paths start with `/api/`. Routes are defined in `Backend/accounts/urls.py` a
 | GET | `admin/admins/` | Owner and admins (`accounts.view_admins`) | Active team, paginated. |
 | POST | `admin/admins/<id>/remove/` | Owner (`accounts.remove_admin`) | Deactivates and logs out everywhere. Not for the owner or yourself. |
 | POST | `admin/admins/<id>/reset-second-step/` | Owner (`accounts.reset_admin_two_factor`) | Removes the app and recovery codes and logs out everywhere. |
+| GET | `admin/former-admins/` | Owner (`accounts.reinvite_admin`) | Removed admins, paginated. |
+| POST | `admin/former-admins/<id>/reinvite/` | Owner (`accounts.reinvite_admin`) | Creates a link that only reactivates this person; cancels their earlier pending re-invite. The raw token is returned once. |
 | GET | `admin/activity/` | Owner and admins (`accounts.view_admin_activity`) | Admin activity, newest first, paginated. |

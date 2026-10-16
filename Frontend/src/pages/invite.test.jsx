@@ -48,3 +48,25 @@ test('accepting sends the token and opens the security setup', async () => {
     token: 'good-token', display_name: 'Koffi', email: 'koffi@example.com', password: 'Un-mot-de-passe-solide',
   })
 })
+
+test('a re-invite link asks only for a new password and reactivates that account', async () => {
+  const calls = mockApi({
+    ...loggedOut,
+    'POST /invites/check/': { body: { expires_at: '2026-10-18T10:00:00Z', kind: 'reactivate', display_name: 'Moussa', email: 'moussa@example.com' } },
+    'POST /invites/reactivate/': { body: { next: 'setup' } },
+    'POST /auth/second-step/setup/': { body: { otpauth_url: 'otpauth://totp/x', secret: 'S' } },
+  })
+  renderApp('/invitation#back7')
+  expect(await screen.findByRole('heading', { name: 'Réactivez votre compte' })).toBeTruthy()
+  expect(screen.getByText(/Bonjour Moussa/).textContent).toContain('moussa@example.com')
+  expect(screen.queryByLabelText('Votre nom')).toBeNull()
+  expect(screen.queryByLabelText('Adresse e-mail')).toBeNull()
+
+  const user = userEvent.setup()
+  await user.type(screen.getByLabelText('Mot de passe'), 'Un-mot-de-passe-solide')
+  await user.type(screen.getByLabelText('Confirmez le mot de passe'), 'Un-mot-de-passe-solide')
+  await user.click(screen.getByRole('button', { name: 'Réactiver mon compte' }))
+  expect(await screen.findByRole('heading', { name: 'Sécurisez votre compte' })).toBeTruthy()
+  expect(calls.find((c) => c.path === '/invites/reactivate/').body).toEqual({ token: 'back7', password: 'Un-mot-de-passe-solide' })
+  expect(calls.some((c) => c.path === '/invites/accept/')).toBe(false)
+})

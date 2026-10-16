@@ -8,6 +8,8 @@ const SENTENCES = {
   admin_joined: (e) => `${e.actor} a rejoint l'équipe des administrateurs.`,
   admin_removed: (e) => `${e.actor} a retiré ${e.target} des administrateurs.`,
   two_factor_reset: (e) => `${e.actor} a réinitialisé la double authentification de ${e.target}.`,
+  admin_reinvited: (e) => `${e.actor} a réinvité ${e.target}.`,
+  admin_rejoined: (e) => `${e.actor} a rejoint à nouveau l'équipe des administrateurs.`,
 }
 
 function describe(entry) {

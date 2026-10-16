@@ -12,10 +12,13 @@ urlpatterns = [
     path("auth/me/", api.MeView.as_view()),
     path("invites/check/", api.InviteCheckView.as_view()),
     path("invites/accept/", api.InviteAcceptView.as_view()),
+    path("invites/reactivate/", api.InviteReactivateView.as_view()),
     path("admin/invites/", api.InviteListCreateView.as_view()),
     path("admin/invites/<int:pk>/", api.InviteRevokeView.as_view()),
     path("admin/admins/", api.AdminListView.as_view()),
     path("admin/admins/<int:pk>/remove/", api.AdminRemoveView.as_view()),
     path("admin/admins/<int:pk>/reset-second-step/", api.AdminResetSecondStepView.as_view()),
+    path("admin/former-admins/", api.FormerAdminListView.as_view()),
+    path("admin/former-admins/<int:pk>/reinvite/", api.ReinviteView.as_view()),
     path("admin/activity/", api.ActivityListView.as_view()),
 ]

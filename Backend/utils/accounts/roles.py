@@ -14,6 +14,7 @@ OWNER_ONLY_PERMISSIONS = [
     "invite_admin",
     "remove_admin",
     "reset_admin_two_factor",
+    "reinvite_admin",
 ]
 
 ROLE_PERMISSIONS = {

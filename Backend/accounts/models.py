@@ -42,6 +42,7 @@ class User(AbstractBaseUser, PermissionsMixin):
             ("reset_admin_two_factor", "Réinitialiser la double authentification d'un administrateur"),
             ("view_admins", "Voir la liste des administrateurs"),
             ("view_admin_activity", "Voir l'activité des administrateurs"),
+            ("reinvite_admin", "Réinviter un ancien administrateur"),
         ]
 
     def __str__(self):
@@ -63,7 +64,11 @@ class AdminInvite(models.Model):
     created_at = models.DateTimeField(default=timezone.now)
     expires_at = models.DateTimeField()
     accepted_at = models.DateTimeField(null=True, blank=True)
-    accepted_by = models.OneToOneField(
+    accepted_by = models.ForeignKey(
+        settings.AUTH_USER_MODEL, null=True, blank=True, on_delete=models.PROTECT, related_name="+"
+    )
+    # Set only on a re-invite: the one removed admin this link can switch back on.
+    for_user = models.ForeignKey(
         settings.AUTH_USER_MODEL, null=True, blank=True, on_delete=models.PROTECT, related_name="+"
     )
     revoked_at = models.DateTimeField(null=True, blank=True)
@@ -98,6 +103,8 @@ class AdminActivity(models.Model):
         ADMIN_JOINED = "admin_joined"
         ADMIN_REMOVED = "admin_removed"
         TWO_FACTOR_RESET = "two_factor_reset"
+        ADMIN_REINVITED = "admin_reinvited"
+        ADMIN_REJOINED = "admin_rejoined"
 
     actor = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.PROTECT, related_name="+")
     action = models.CharField(max_length=32, choices=Action.choices)

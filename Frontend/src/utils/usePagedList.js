@@ -1,8 +1,8 @@
 import { useCallback, useEffect, useState } from 'react'
 import { api, nextPagePath } from '../api/client'
 
-/** Loads a paginated API list, one page at a time. */
-export function usePagedList(basePath) {
+/** Loads a paginated API list, one page at a time. Changing `refreshKey` reloads it from the start. */
+export function usePagedList(basePath, refreshKey = 0) {
   const [items, setItems] = useState(null)
   const [nextPath, setNextPath] = useState(null)
   const [error, setError] = useState('')
@@ -29,7 +29,7 @@ export function usePagedList(basePath) {
     return () => {
       active = false
     }
-  }, [basePath, version, showPage, showError])
+  }, [basePath, version, refreshKey, showPage, showError])
 
   const reload = useCallback(() => setVersion((v) => v + 1), [])
 

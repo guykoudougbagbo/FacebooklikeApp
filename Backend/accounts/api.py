@@ -12,10 +12,13 @@ from utils.accounts.serializers import (
     ActivitySerializer,
     AdminSerializer,
     CodeSerializer,
+    FormerAdminSerializer,
+    InviteCheckSerializer,
     InviteSerializer,
     InviteTokenSerializer,
     LoginSerializer,
     MeSerializer,
+    ReactivateSerializer,
 )
 from utils.accounts.throttles import InviteThrottle, LoginAccountThrottle, LoginIPThrottle, SecondStepThrottle
 from utils.api import NewestFirstPagination, OldestFirstPagination, csrf_checked, has_permission
@@ -140,7 +143,7 @@ class InviteCheckView(APIView):
         invite = invites.find_usable(data.validated_data["token"])
         if invite is None:
             return _error(INVALID_INVITE, status.HTTP_404_NOT_FOUND)
-        return Response({"expires_at": invite.expires_at})
+        return Response(InviteCheckSerializer(invite).data)
 
 
 @csrf_checked
@@ -158,6 +161,22 @@ class InviteAcceptView(APIView):
         except invites.InviteError as exc:
             return _error(str(exc))
         return Response({"next": sessions.begin_pending(request, user)}, status=status.HTTP_201_CREATED)
+
+
+@csrf_checked
+class InviteReactivateView(APIView):
+    # Public: a removed admin is logged out; their personal re-invite link is the proof.
+    permission_classes = [AllowAny]
+    throttle_classes = [InviteThrottle]
+
+    def post(self, request):
+        data = ReactivateSerializer(data=request.data)
+        data.is_valid(raise_exception=True)
+        try:
+            user = invites.reactivate_from_invite(data.validated_data["token"], data.validated_data["password"])
+        except invites.InviteError as exc:
+            return _error(str(exc))
+        return Response({"next": sessions.begin_pending(request, user)})
 
 
 # --- Managing admins -----------------------------------------------------
@@ -216,6 +235,29 @@ class AdminResetSecondStepView(APIView):
         except admins.AdminError as exc:
             return _error(str(exc))
         return Response(status=status.HTTP_204_NO_CONTENT)
+
+
+class FormerAdminListView(generics.ListAPIView):
+    permission_classes = [has_permission("accounts", "reinvite_admin")]
+    serializer_class = FormerAdminSerializer
+    pagination_class = OldestFirstPagination
+
+    def get_queryset(self):
+        return admins.former_admins()
+
+
+class ReinviteView(APIView):
+    permission_classes = [has_permission("accounts", "reinvite_admin")]
+
+    def post(self, request, pk):
+        try:
+            invite, token = invites.create_reinvite(pk, request.user)
+        except invites.InviteError as exc:
+            return _error(str(exc), status.HTTP_404_NOT_FOUND)
+        return Response(
+            {"id": invite.id, "token": token, "expires_at": invite.expires_at},
+            status=status.HTTP_201_CREATED,
+        )
 
 
 class ActivityListView(generics.ListAPIView):

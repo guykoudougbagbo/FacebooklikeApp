@@ -4,7 +4,7 @@ from django.db import transaction
 
 from accounts.models import AdminActivity
 from utils.accounts import activity, sessions, two_factor
-from utils.accounts.roles import OWNER, owner_exists
+from utils.accounts.roles import ADMIN, OWNER, owner_exists
 
 
 class AdminError(Exception):
@@ -16,6 +16,11 @@ def active_admins():
         get_user_model().objects.filter(is_active=True, groups__isnull=False)
         .distinct().prefetch_related("groups").order_by("id")
     )
+
+
+def former_admins():
+    """Removed admins the owner can re-invite. The owner can't be removed, so never appears here."""
+    return get_user_model().objects.filter(is_active=False, groups__name=ADMIN).distinct().order_by("id")
 
 
 def create_owner(email, display_name, password):
