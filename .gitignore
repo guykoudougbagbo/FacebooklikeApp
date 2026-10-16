@@ -1,0 +1,14 @@
+# Secrets and local settings
+.env
+.claude/settings.local.json
+
+# Python
+.venv/
+__pycache__/
+*.pyc
+
+# Uploaded media in local development
+Backend/media/
+
+# macOS
+.DS_Store
