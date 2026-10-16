@@ -33,6 +33,7 @@ INSTALLED_APPS = [
     'django_otp.plugins.otp_totp',
     # After django.contrib.auth, whose post-migrate step creates the permissions accounts relies on.
     'accounts',
+    'posts',
 ]
 
 AUTH_USER_MODEL = 'accounts.User'
@@ -100,6 +101,58 @@ LOGIN_PENDING_TTL_SECONDS = require_int("LOGIN_PENDING_TTL_SECONDS")
 ADMIN_INVITE_TTL_HOURS = require_int("ADMIN_INVITE_TTL_HOURS")
 RECOVERY_CODE_COUNT = require_int("RECOVERY_CODE_COUNT")
 OTP_TOTP_ISSUER = require_env("APP_NAME")
+
+
+# Files. Web photos are public; uploads as received (with their hidden metadata) stay private.
+
+MEDIA_ROOT = BASE_DIR / require_env("MEDIA_ROOT")
+MEDIA_URL = require_env("MEDIA_URL")
+PHOTO_ORIGINALS_ROOT = BASE_DIR / require_env("PHOTO_ORIGINALS_ROOT")
+
+STORAGES = {
+    'default': {
+        'BACKEND': 'django.core.files.storage.FileSystemStorage',
+        'OPTIONS': {'location': MEDIA_ROOT, 'base_url': MEDIA_URL},
+    },
+    'private': {
+        'BACKEND': 'django.core.files.storage.FileSystemStorage',
+        'OPTIONS': {'location': PHOTO_ORIGINALS_ROOT},
+    },
+    'staticfiles': {'BACKEND': 'django.contrib.staticfiles.storage.StaticFilesStorage'},
+}
+
+
+# Posts and photos
+
+POST_MAX_TEXT_LENGTH = require_int("POST_MAX_TEXT_LENGTH")
+POST_MAX_PHOTOS = require_int("POST_MAX_PHOTOS")
+PHOTO_MAX_UPLOAD_BYTES = require_int("PHOTO_MAX_UPLOAD_BYTES")
+PHOTO_MAX_PIXELS = require_int("PHOTO_MAX_PIXELS")
+PHOTO_FEED_MAX_PX = require_int("PHOTO_FEED_MAX_PX")
+PHOTO_FULL_MAX_PX = require_int("PHOTO_FULL_MAX_PX")
+PHOTO_WEBP_QUALITY = require_int("PHOTO_WEBP_QUALITY")
+POST_PROCESSING_TIMEOUT_SECONDS = require_int("POST_PROCESSING_TIMEOUT_SECONDS")
+POST_PROCESSING_MAX_ATTEMPTS = require_int("POST_PROCESSING_MAX_ATTEMPTS")
+POST_REPAIR_BATCH_SIZE = require_int("POST_REPAIR_BATCH_SIZE")
+# Off until a person has read the repair job's log and switched it on.
+POST_REPAIR_APPLY = require_bool("POST_REPAIR_APPLY")
+
+
+# Background worker (Celery)
+
+CELERY_BROKER_URL = require_env("CELERY_BROKER_URL")
+CELERY_BROKER_CONNECTION_RETRY_ON_STARTUP = True
+# Photo jobs can safely run again, so a crashed worker's job is retried instead of lost.
+CELERY_TASK_ACKS_LATE = True
+CELERY_WORKER_PREFETCH_MULTIPLIER = 1
+# Keeps the schedule in memory, so the worker writes no schedule file to disk.
+CELERY_BEAT_SCHEDULER = 'celery.beat:Scheduler'
+CELERY_BEAT_SCHEDULE = {
+    'repair-stuck-photos': {
+        'task': 'posts.tasks.repair_stuck_photos',
+        'schedule': require_int("POST_REPAIR_INTERVAL_SECONDS"),
+    },
+}
 
 
 # Password validation

@@ -17,7 +17,8 @@ export function mockApi(handlers) {
     const method = options.method ?? 'GET'
     const path = new URL(url, 'http://test').pathname.replace(/^\/api/, '')
     const search = new URL(url, 'http://test').search
-    const body = options.body ? JSON.parse(options.body) : undefined
+    const body = options.body instanceof FormData ? formToObject(options.body)
+      : options.body ? JSON.parse(options.body) : undefined
     calls.push({ method, path, search, body, headers: options.headers })
     const handler = handlers[`${method} ${path}`]
     const result = typeof handler === 'function' ? handler(body) : handler
@@ -27,8 +28,21 @@ export function mockApi(handlers) {
   return calls
 }
 
-export const loggedOut = { 'GET /auth/me/': { status: 403, body: { detail: 'Non authentifié.' } } }
-export const loggedInAs = (user) => ({ 'GET /auth/me/': { body: user } })
+/** Uploads as { field: [values] }, so tests can check exactly what was sent. */
+function formToObject(form) {
+  const result = {}
+  for (const [key, value] of form.entries()) (result[key] ??= []).push(value)
+  return result
+}
+
+export const loggedOut = {
+  'GET /auth/me/': { status: 403, body: { detail: 'Non authentifié.' } },
+  'GET /posts/': { body: { results: [], next: null, previous: null } },
+}
+export const loggedInAs = (user) => ({
+  'GET /auth/me/': { body: user },
+  'GET /admin/posts/': { body: { results: [], next: null, previous: null } },
+})
 
 export function renderApp(path) {
   const router = createMemoryRouter(routes, { initialEntries: [path] })
@@ -46,6 +60,9 @@ export function page(results, next = null) {
 
 beforeEach(() => {
   document.cookie = 'csrftoken=test-token'
+  // jsdom has no image previews; the composer only needs a URL string back.
+  URL.createObjectURL = vi.fn((file) => `blob:${file.name}`)
+  URL.revokeObjectURL = vi.fn()
 })
 
 afterEach(() => {

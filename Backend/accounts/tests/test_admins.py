@@ -16,23 +16,26 @@ ACTIVITY = "/api/admin/activity/"
 ME = "/api/auth/me/"
 
 
+def permission_names(group):
+    return {f"{p.content_type.app_label}.{p.codename}" for p in group.permissions.select_related("content_type")}
+
+
 class RolesTest(AccountsTestCase):
     def test_groups_hold_exactly_the_registry_permissions(self):
-        for role, codenames in roles.ROLE_PERMISSIONS.items():
-            group = Group.objects.get(name=role)
-            self.assertCountEqual(group.permissions.values_list("codename", flat=True), codenames)
+        for role, names in roles.ROLE_PERMISSIONS.items():
+            self.assertEqual(permission_names(Group.objects.get(name=role)), set(names))
 
     def test_owner_has_every_admin_permission(self):
         owner = self.make_owner()
-        admin_perms = set(Group.objects.get(name=roles.ADMIN).permissions.values_list("codename", flat=True))
-        self.assertTrue(admin_perms)
-        for codename in admin_perms:
-            self.assertTrue(owner.has_perm(f"accounts.{codename}"), codename)
+        admin_perms = permission_names(Group.objects.get(name=roles.ADMIN))
+        self.assertIn("posts.create_post", admin_perms)
+        for name in admin_perms:
+            self.assertTrue(owner.has_perm(name), name)
 
     def test_sync_repairs_drift(self):
         Group.objects.get(name=roles.ADMIN).permissions.clear()
         roles.sync_role_groups()
-        self.assertEqual(Group.objects.get(name=roles.ADMIN).permissions.count(), 2)
+        self.assertEqual(permission_names(Group.objects.get(name=roles.ADMIN)), set(roles.ADMIN_PERMISSIONS))
 
     def test_role_of(self):
         self.assertEqual(roles.role_of(self.make_owner()), "owner")

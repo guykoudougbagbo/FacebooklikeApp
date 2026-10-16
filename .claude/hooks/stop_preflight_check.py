@@ -9,6 +9,9 @@ MARKER = "preflight considered:"
 def is_user_prompt(entry):
     if entry.get("type") != "user" or entry.get("isMeta"):
         return False
+    # Background-task notices arrive as user entries but come from the system, not the person.
+    if entry.get("promptSource") == "system":
+        return False
     content = (entry.get("message") or {}).get("content")
     if isinstance(content, str):
         return True

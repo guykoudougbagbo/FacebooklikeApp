@@ -1,0 +1,9 @@
+.feed {
+  max-width: 600px;
+  margin: 0 auto;
+}
+
+.feed__more {
+  text-align: center;
+  margin: 8px 0 24px;
+}

@@ -2,12 +2,13 @@ import react from '@vitejs/plugin-react'
 import { defineConfig, loadEnv } from 'vite'
 
 /**
- * Sends /api to the backend. Keeps the browser's own address (changeOrigin: false):
+ * Sends /api and /media (uploaded photos) to the backend. Keeps the browser's own address (changeOrigin: false):
  * the backend compares it with the form's Origin and refuses a mismatch.
  * Vite's string shorthand would turn changeOrigin on, so the object form is required.
  */
 export function apiProxy(backendUrl) {
-  return { '/api': { target: backendUrl, changeOrigin: false } }
+  const options = { target: backendUrl, changeOrigin: false }
+  return { '/api': options, '/media': options }
 }
 
 // https://vite.dev/config/

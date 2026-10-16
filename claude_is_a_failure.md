@@ -3,6 +3,8 @@
 ## Patterns
 
 - **Missing task opening line** | count: 1 | entries: F-001 | hook: none
+- **Hook misjudged what counts as a user message** | count: 1 | entries: F-005 | hook: built (stop_preflight_check.py, fixed)
+- **Tests not isolated from local services** | count: 1 | entries: F-004 | hook: none
 - **Coded from memory instead of the source** | count: 2 | entries: F-002, F-003 | hook: not hookable (no script can tell whether behaviour was read before it was relied on; rule tightened in Conventions instead)
 
 ## Entries
@@ -36,3 +38,24 @@
 - **How it was caught:** user correction (login failed in the browser; the server log showed the origin mismatch)
 - **Fix:** Read Vite's proxy code, switched to the object form with `changeOrigin: false` (`apiProxy` in `vite.config.js`), added a regression test, and confirmed through the real browser path (proxy, running Django server) that login reaches the password check and a foreign origin is still refused.
 - **Pattern:** Coded from memory instead of the source
+
+### F-004: Post tests sent real jobs to the local Redis queue
+
+- **Date:** 2026-10-16
+- **Section:** Pillars of Development (Testing)
+- **Rule broken:** none: a new rule is needed (tests must not reach the developer's real services).
+- **What happened:** Two photo tests ran on-commit callbacks without mocking the Celery `delay`, so they pushed jobs into the local Redis queue. The worker picked them up when it started.
+- **How it was caught:** self-review (the worker log showed jobs nobody had created)
+- **Fix:** `PostsTestCase` now mocks `process_post_photos.delay` for every test; confirmed the queue stays at 0 after the full backend suite.
+- **Pattern:** Tests not isolated from local services
+
+### F-005: Stop hook raised a false alarm after a system notice
+
+- **Date:** 2026-10-16
+- **Section:** Failure Log / hooks
+- **Rule broken:** none: the reply did start with "preflight considered:"; the hook I built misjudged it.
+- **What happened:** A background-task notice was saved as a user entry labelled `promptSource: system`. The Stop hook treated it as the person's message, and the opening of my reply after it was missing from the saved transcript (session restart), so the hook blocked a correct reply.
+- **How it was caught:** the hook blocked the turn; checked against the transcript
+- **Fix:** `stop_preflight_check.py` ignores entries with `promptSource: system`; added a test reproducing the case. Re-ran the hook logic on the real transcript: it now finds the right message and the marker.
+- **Pattern:** Hook misjudged what counts as a user message
+

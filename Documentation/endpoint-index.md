@@ -2,7 +2,7 @@
 
 Every backend route, who can call it, and where it's defined. Update this file in the same change that adds or removes a route.
 
-All paths start with `/api/`. Routes are defined in `Backend/accounts/urls.py` and `Backend/accounts/api.py`; their logic lives in `Backend/utils/accounts/`.
+All paths start with `/api/`. Routes are defined in `Backend/<app>/urls.py` and `Backend/<app>/api.py` (apps: `accounts`, `posts`); their logic lives in `Backend/utils/<app>/`.
 
 "Public" routes are open on purpose; each one's reason is written next to it in `accounts/api.py`. Public routes that change something still require the CSRF token.
 
@@ -39,3 +39,17 @@ All paths start with `/api/`. Routes are defined in `Backend/accounts/urls.py` a
 | GET | `admin/former-admins/` | Owner (`accounts.reinvite_admin`) | Removed admins, paginated. |
 | POST | `admin/former-admins/<id>/reinvite/` | Owner (`accounts.reinvite_admin`) | Creates a link that only reactivates this person; cancels their earlier pending re-invite. The raw token is returned once. |
 | GET | `admin/activity/` | Owner and admins (`accounts.view_admin_activity`) | Admin activity, newest first, paginated. |
+
+## Posts
+
+| Method | Path | Who can call it | Notes |
+|--------|------|-----------------|-------|
+| GET | `posts/` | Public | The page's feed: published posts only, newest first, cursor-paginated. Shows the page as author (no admin names) and only photos that are ready. |
+| GET | `admin/posts/` | Owner and admins (`posts.view_post_details`) | Every post, any status, newest first, with author name, photo statuses and `can_edit` / `can_delete` for the caller. |
+| POST | `admin/posts/` | Owner and admins (`posts.create_post`) | Multipart: `body`, `photos` (repeat for several). Text-only posts publish at once; with photos the post is `processing` until the worker has built the web versions. |
+| GET | `admin/posts/<id>/` | Owner and admins (`posts.view_post_details`) | One post, used to follow processing. |
+| PATCH | `admin/posts/<id>/` | The post's author (`posts.edit_own_post`) | Multipart: `body`, new `photos`, `remove_photo_ids` (repeat). |
+| DELETE | `admin/posts/<id>/` | The post's author (`posts.delete_own_post`) or the owner (`posts.delete_any_post`) | Deletes the post and its photo files. |
+
+Photo files are served under `MEDIA_URL` (`/media/`). Uploads as received are kept in private storage and deleted once processed.
+

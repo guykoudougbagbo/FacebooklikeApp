@@ -44,5 +44,12 @@ export function usePagedList(basePath, refreshKey = 0) {
     setLoadingMore(false)
   }, [nextPath, showPage, showError])
 
-  return { items, error, hasMore: Boolean(nextPath), loadMore, loadingMore, reload }
+  const prependItem = useCallback((item) => setItems((current) => [item, ...(current ?? [])]), [])
+  const replaceItem = useCallback(
+    (item) => setItems((current) => current?.map((existing) => (existing.id === item.id ? item : existing))),
+    [],
+  )
+  const removeItem = useCallback((id) => setItems((current) => current?.filter((existing) => existing.id !== id)), [])
+
+  return { items, error, hasMore: Boolean(nextPath), loadMore, loadingMore, reload, prependItem, replaceItem, removeItem }
 }

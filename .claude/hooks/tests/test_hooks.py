@@ -78,6 +78,13 @@ class StopHookTest(unittest.TestCase):
         _, out, _ = self.run_stop(entries)
         self.assertEqual(json.loads(out)["decision"], "block")
 
+    def test_system_notices_are_not_user_prompts(self):
+        notice = user("<task-notification>...</task-notification>")
+        notice["promptSource"] = "system"
+        entries = [user("task"), assistant_text("preflight considered:\nok"), notice, assistant_text("Next step")]
+        _, out, _ = self.run_stop(entries)
+        self.assertEqual(out, "")
+
     def test_does_not_block_twice_in_a_row(self):
         _, out, _ = self.run_stop([user("hi"), assistant_text("Hello")], stop_hook_active=True)
         self.assertEqual(out, "")

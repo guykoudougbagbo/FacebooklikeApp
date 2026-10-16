@@ -9,6 +9,7 @@ __pycache__/
 
 # Uploaded media in local development
 Backend/media/
+Backend/private_uploads/
 
 # macOS
 .DS_Store

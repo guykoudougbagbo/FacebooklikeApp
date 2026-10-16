@@ -40,7 +40,9 @@ export async function api(path, { method = 'GET', body } = {}) {
     await ensureCsrfCookie()
     headers['X-CSRFToken'] = readCookie('csrftoken')
   }
-  if (body !== undefined) headers['Content-Type'] = 'application/json'
+  const isForm = body instanceof FormData
+  // The browser sets the multipart Content-Type (with its boundary) for FormData itself.
+  if (body !== undefined && !isForm) headers['Content-Type'] = 'application/json'
 
   let response
   try {
@@ -48,7 +50,7 @@ export async function api(path, { method = 'GET', body } = {}) {
       method,
       headers,
       credentials: 'same-origin',
-      body: body === undefined ? undefined : JSON.stringify(body),
+      body: body === undefined || isForm ? body : JSON.stringify(body),
     })
   } catch {
     throw new ApiError(0, 'Connexion impossible. Vérifiez votre réseau.', null)

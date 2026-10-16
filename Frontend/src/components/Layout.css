@@ -6,4 +6,6 @@
   padding: 16px;
   background: #000 url('../assets/brand/genz-logo-large.jpg') center / contain no-repeat;
   background-origin: content-box;
+  /* Dims the logo toward the black page so content stays the focus. Lower = fainter. */
+  opacity: 0.7;
 }

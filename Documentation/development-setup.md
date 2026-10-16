@@ -13,6 +13,7 @@ Installed with Homebrew from `/opt/homebrew` (the Apple Silicon install, not the
 | PostgreSQL | 18 | Database |
 | Redis | 8 | Instant messaging and background jobs (later steps) |
 | FFmpeg | 9 | Mixing sound into videos (later steps) |
+| Celery | 5.6 | Background worker that prepares photos (Python package, uses Redis) |
 
 PostgreSQL and Redis run in the background: `brew services list` shows them.
 
@@ -29,12 +30,31 @@ cp .env.example .env        # then fill in every value
 .venv/bin/python manage.py runserver 8000
 ```
 
+In a second terminal, start the background worker (it also runs the scheduled repair job):
+
+```
+cd Backend
+.venv/bin/celery -A config worker -B --pool threads --concurrency 2 --loglevel info
+```
+
+`--pool threads` is for macOS: there, Celery 5.6's default process pool starts its helper processes with "spawn", which skips the worker's setup and makes every job fail with `not enough values to unpack` (celery/celery issue 9894). Linux servers keep the default process pool.
+
+Without the worker, posts with photos stay at "Publication en cours…".
+
 - Every setting in `.env.example` is required. The server stops at startup with a clear message if one is missing or invalid.
 - `.env` holds secrets and is never committed.
 - The database user needs the `CREATEDB` right, because tests create and delete a temporary `test_<name>` database.
 - Every API route requires a logged-in user by default (`REST_FRAMEWORK` in `config/settings.py`).
 - Business logic lives in `Backend/utils/`; route files only define routes.
 - Tests use an in-memory cache instead of Redis, so running them never touches your Redis data.
+
+### Posts and photos
+
+- Logic lives in `Backend/utils/posts/` (`posts.py` for posts and the repair job, `photos.py` for checking and resizing photos).
+- An upload is checked by actually opening it as an image (JPEG, PNG, WebP or HEIC), within `PHOTO_MAX_UPLOAD_BYTES` and `PHOTO_MAX_PIXELS`. The original goes to private storage (`PHOTO_ORIGINALS_ROOT`, never served).
+- The worker builds two WebP versions (feed and full screen, sized by `PHOTO_FEED_MAX_PX` / `PHOTO_FULL_MAX_PX`), turns phone photos upright, and drops all hidden metadata such as GPS location. Then it deletes the original.
+- The repair job (`posts.tasks.repair_stuck_photos`, every `POST_REPAIR_INTERVAL_SECONDS`) retries photos stuck longer than `POST_PROCESSING_TIMEOUT_SECONDS` and gives up after `POST_PROCESSING_MAX_ATTEMPTS`. It starts in log-only mode: with `POST_REPAIR_APPLY=false` it only writes what it would do to the worker log. Read that log, then set it to `true`.
+- Production must also limit request size at the web server (for example nginx `client_max_body_size`), since Django checks each photo only after it has arrived.
 
 ### Creating the page owner
 
