@@ -3,7 +3,7 @@
 ## Patterns
 
 - **Missing task opening line** | count: 1 | entries: F-001 | hook: none
-- **Coded from memory instead of the source** | count: 1 | entries: F-002 | hook: none
+- **Coded from memory instead of the source** | count: 2 | entries: F-002, F-003 | hook: not hookable (no script can tell whether behaviour was read before it was relied on; rule tightened in Conventions instead)
 
 ## Entries
 
@@ -25,4 +25,14 @@
 - **What happened:** To make tests send HTTPS requests, I set `wsgi.url_scheme` as a client default from memory. Django 6.1's test client overwrites it on every request, so 33 tests still failed with debug off.
 - **How it was caught:** failed test
 - **Fix:** Read `django/test/client.py`, then set the scheme in `SecureAPIClient.request()`, which runs after Django's defaults.
+- **Pattern:** Coded from memory instead of the source
+
+### F-003: Admin login blocked because the dev proxy rewrote the address
+
+- **Date:** 2026-10-16
+- **Section:** Conventions, Verification
+- **Rule broken:** "Write the code against that version's official documentation, not from memory." and "Before you say something is true, prove it."
+- **What happened:** I set the Vite proxy with the string shorthand, assuming it keeps the browser's address. Vite's shorthand turns `changeOrigin` on, so Django saw `localhost:8000` against an Origin of `localhost:5173` and refused every login with 403. I had also written in the setup doc that login worked through the proxy, without testing that path; every test mocked the API or skipped the proxy.
+- **How it was caught:** user correction (login failed in the browser; the server log showed the origin mismatch)
+- **Fix:** Read Vite's proxy code, switched to the object form with `changeOrigin: false` (`apiProxy` in `vite.config.js`), added a regression test, and confirmed through the real browser path (proxy, running Django server) that login reaches the password check and a foreign origin is still refused.
 - **Pattern:** Coded from memory instead of the source

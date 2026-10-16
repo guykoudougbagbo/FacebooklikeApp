@@ -22,6 +22,13 @@ class RolesTest(AccountsTestCase):
             group = Group.objects.get(name=role)
             self.assertCountEqual(group.permissions.values_list("codename", flat=True), codenames)
 
+    def test_owner_has_every_admin_permission(self):
+        owner = self.make_owner()
+        admin_perms = set(Group.objects.get(name=roles.ADMIN).permissions.values_list("codename", flat=True))
+        self.assertTrue(admin_perms)
+        for codename in admin_perms:
+            self.assertTrue(owner.has_perm(f"accounts.{codename}"), codename)
+
     def test_sync_repairs_drift(self):
         Group.objects.get(name=roles.ADMIN).permissions.clear()
         roles.sync_role_groups()

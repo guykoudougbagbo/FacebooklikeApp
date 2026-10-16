@@ -1,6 +1,15 @@
 import react from '@vitejs/plugin-react'
 import { defineConfig, loadEnv } from 'vite'
 
+/**
+ * Sends /api to the backend. Keeps the browser's own address (changeOrigin: false):
+ * the backend compares it with the form's Origin and refuses a mismatch.
+ * Vite's string shorthand would turn changeOrigin on, so the object form is required.
+ */
+export function apiProxy(backendUrl) {
+  return { '/api': { target: backendUrl, changeOrigin: false } }
+}
+
 // https://vite.dev/config/
 export default defineConfig(({ command, mode }) => {
   const env = loadEnv(mode, process.cwd(), '')
@@ -11,7 +20,7 @@ export default defineConfig(({ command, mode }) => {
   return {
     plugins: [react()],
     // The site and the API share one address, so login cookies stay first-party.
-    server: serving ? { proxy: { '/api': env.BACKEND_URL } } : undefined,
+    server: serving ? { proxy: apiProxy(env.BACKEND_URL) } : undefined,
     test: {
       environment: 'jsdom',
     },

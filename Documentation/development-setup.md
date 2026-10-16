@@ -50,6 +50,8 @@ It asks for the password twice. Then log in at `/connexion` on the site and link
 
 `Backend/utils/accounts/roles.py` is the central list of roles (`owner`, `admin`) and the permissions each one has. After every `migrate`, the role groups are rebuilt to match that list exactly, so edit the list, not the groups.
 
+The owner is also an admin: the owner's permissions are built from `ADMIN_PERMISSIONS` plus `OWNER_ONLY_PERMISSIONS`. Add a new admin ability to `ADMIN_PERMISSIONS` and the owner gets it automatically.
+
 ## Frontend
 
 ```
@@ -61,7 +63,7 @@ npm test          # tests
 npm run lint
 ```
 
-The local site sends every `/api/...` request to `BACKEND_URL`, so the browser sees one address and login cookies work. Pages live in `src/pages/`, shared pieces in `src/components/`, and the API helper in `src/api/client.js`. All text shown to people is in French.
+The local site sends every `/api/...` request to `BACKEND_URL` and keeps the browser's address on the way (`apiProxy` in `vite.config.js`), so the browser sees one address, login cookies work, and Django's form-origin check passes. Pages live in `src/pages/`, shared pieces in `src/components/`, and the API helper in `src/api/client.js`. All text shown to people is in French.
 
 `Frontend/.npmrc` sets `save-exact=true`, so every new package is pinned to an exact version.
 

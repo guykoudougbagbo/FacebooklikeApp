@@ -102,6 +102,7 @@ Never do any of these unless the user explicitly asks:
 - Repairs run automatically. If data can drift out of sync, write a scheduled job that detects and fixes it. Never build a manual "sync", "reconcile", or "repair" button or endpoint.
 - If the app writes to a file at runtime, such as tuned settings or a local cache, gitignore it and commit a `.example` copy that seeds it.
 - Add new dependencies to the project's dependency manifest with a pinned version. Write the code against that version's official documentation, not from memory.
+- Before relying on how a library, framework or tool behaves (defaults, shorthands, headers, what it overwrites), read that behaviour in the installed version's source or docs and say what you read. This applies to config files and test helpers too. Then check it through the real path (for example browser, proxy, server), not only with mocks.
 - Required config values have no fallback defaults. If one is missing, fail at startup with a clear error.
 
 ## Code Reuse and Style

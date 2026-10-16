@@ -5,18 +5,21 @@ from django.contrib.auth.models import Group, Permission
 OWNER = "owner"
 ADMIN = "admin"
 
+ADMIN_PERMISSIONS = [
+    "view_admins",
+    "view_admin_activity",
+]
+
+OWNER_ONLY_PERMISSIONS = [
+    "invite_admin",
+    "remove_admin",
+    "reset_admin_two_factor",
+]
+
 ROLE_PERMISSIONS = {
-    OWNER: [
-        "invite_admin",
-        "remove_admin",
-        "reset_admin_two_factor",
-        "view_admins",
-        "view_admin_activity",
-    ],
-    ADMIN: [
-        "view_admins",
-        "view_admin_activity",
-    ],
+    # The owner is also an admin: every admin permission, present and future, plus managing the team.
+    OWNER: ADMIN_PERMISSIONS + OWNER_ONLY_PERMISSIONS,
+    ADMIN: ADMIN_PERMISSIONS,
 }
 
 
