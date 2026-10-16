@@ -1,0 +1,30 @@
+.setup__steps {
+  padding-left: 20px;
+}
+
+.setup__qr {
+  display: flex;
+  justify-content: center;
+  margin: 16px 0;
+
+  svg {
+    background: #fff;
+    border-radius: 8px;
+  }
+}
+
+.setup__secret code,
+.setup__codes code {
+  font-family: ui-monospace, Consolas, monospace;
+  word-break: break-all;
+  color: var(--text-strong);
+}
+
+.setup__codes {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(190px, 1fr));
+  gap: 8px;
+  padding: 0;
+  list-style: none;
+  margin: 16px 0;
+}

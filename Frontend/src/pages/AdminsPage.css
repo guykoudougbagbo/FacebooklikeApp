@@ -1,0 +1,49 @@
+.admins__subtitle {
+  font-size: 17px;
+  margin: 24px 0 8px;
+}
+
+.admins__name {
+  color: var(--text-strong);
+}
+
+.admins__actions {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.badge {
+  font-size: 12px;
+  font-weight: 700;
+  border-radius: 999px;
+  padding: 2px 8px;
+  color: #fff;
+}
+
+.badge--owner {
+  background: var(--brand-orange);
+}
+
+.badge--admin {
+  background: var(--brand-green);
+}
+
+.invite-link {
+  margin-top: 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  align-items: flex-start;
+}
+
+.invite-link__url {
+  font: 14px ui-monospace, Consolas, monospace;
+  width: 100%;
+  box-sizing: border-box;
+  padding: 8px;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  background: var(--surface-muted);
+  color: var(--text-strong);
+}

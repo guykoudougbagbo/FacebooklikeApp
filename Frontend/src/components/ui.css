@@ -1,0 +1,136 @@
+.card {
+  background: var(--surface-glass);
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+  border-radius: 12px;
+  box-shadow: var(--shadow);
+  padding: 24px;
+  margin: 0 auto 16px;
+  width: 100%;
+  max-width: 560px;
+  box-sizing: border-box;
+}
+
+.card__title {
+  margin: 0 0 16px;
+  font-size: 22px;
+}
+
+.button {
+  font: inherit;
+  font-weight: 600;
+  border: 0;
+  border-radius: 8px;
+  padding: 10px 16px;
+  cursor: pointer;
+  transition: filter 0.15s;
+
+  &:hover:not(:disabled) {
+    filter: brightness(1.08);
+  }
+  &:focus-visible {
+    outline: 2px solid var(--focus);
+    outline-offset: 2px;
+  }
+  &:disabled {
+    opacity: 0.6;
+    cursor: default;
+  }
+}
+
+.button--primary {
+  background: var(--brand-purple);
+  color: #fff;
+}
+
+.button--secondary {
+  background: var(--surface-muted);
+  color: var(--text-strong);
+}
+
+.button--danger {
+  background: var(--danger-bg);
+  color: var(--danger);
+}
+
+.field {
+  margin-bottom: 16px;
+}
+
+.field__label {
+  display: block;
+  font-weight: 600;
+  color: var(--text-strong);
+  margin-bottom: 6px;
+}
+
+.field__input {
+  font: inherit;
+  width: 100%;
+  box-sizing: border-box;
+  padding: 10px 12px;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  background: var(--surface);
+  color: var(--text-strong);
+
+  &:focus {
+    outline: 2px solid var(--focus);
+    outline-offset: 0;
+    border-color: transparent;
+  }
+}
+
+.field__hint {
+  margin: 6px 0 0;
+  font-size: 14px;
+}
+
+.message {
+  border-radius: 8px;
+  padding: 10px 12px;
+  margin: 0 0 16px;
+}
+
+.message--error {
+  background: var(--danger-bg);
+  color: var(--danger);
+}
+
+.message--notice {
+  background: var(--surface-muted);
+}
+
+.loading {
+  text-align: center;
+  padding: 16px;
+  margin: 0 auto;
+  max-width: 560px;
+  border-radius: 12px;
+  background: var(--surface-glass);
+  color: var(--text-strong);
+}
+
+.list {
+  list-style: none;
+  padding: 0;
+  margin: 0 0 16px;
+}
+
+.list__row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  flex-wrap: wrap;
+  padding: 12px 0;
+  border-bottom: 1px solid var(--border);
+
+  &:last-child {
+    border-bottom: 0;
+  }
+}
+
+.list__meta {
+  font-size: 14px;
+}

@@ -4,6 +4,8 @@
   z-index: 10;
   display: flex;
   align-items: center;
+  box-sizing: border-box;
+  min-height: var(--header-height);
   padding: 4px 16px;
   /* Matches the logo's own black background so the image edges disappear. */
   background: #000;
@@ -15,13 +17,52 @@
   border-radius: 8px;
 
   &:focus-visible {
-    outline: 2px solid var(--accent);
+    outline: 2px solid var(--focus);
     outline-offset: 2px;
   }
 }
 
 .site-header__logo {
   display: block;
-  height: 64px;
+  height: calc(var(--header-height) - 8px);
   width: auto;
+}
+
+.site-header__nav {
+  margin-left: auto;
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+
+  a {
+    color: #fff;
+    text-decoration: none;
+    font-weight: 600;
+    padding: 6px 10px;
+    border-radius: 8px;
+  }
+  a.active {
+    background: var(--brand-purple);
+  }
+  a:focus-visible,
+  button:focus-visible {
+    outline: 2px solid var(--focus);
+    outline-offset: 2px;
+  }
+}
+
+.site-header__user {
+  color: #ccc;
+}
+
+.site-header__logout {
+  font: inherit;
+  color: #fff;
+  background: transparent;
+  border: 1px solid #555;
+  border-radius: 8px;
+  padding: 6px 10px;
+  cursor: pointer;
 }

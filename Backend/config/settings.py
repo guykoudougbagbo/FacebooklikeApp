@@ -29,7 +29,13 @@ INSTALLED_APPS = [
     'django.contrib.sessions',
     'django.contrib.staticfiles',
     'rest_framework',
+    'django_otp',
+    'django_otp.plugins.otp_totp',
+    # After django.contrib.auth, whose post-migrate step creates the permissions accounts relies on.
+    'accounts',
 ]
+
+AUTH_USER_MODEL = 'accounts.User'
 
 MIDDLEWARE = [
     'django.middleware.security.SecurityMiddleware',
@@ -75,6 +81,27 @@ DATABASES = {
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 
 
+# Cache and sessions (shared by every server, so login limits and sessions work behind a load balancer)
+
+CACHES = {
+    'default': {
+        'BACKEND': 'django.core.cache.backends.redis.RedisCache',
+        'LOCATION': require_env("REDIS_URL"),
+    }
+}
+
+SESSION_ENGINE = 'django.contrib.sessions.backends.cached_db'
+SESSION_COOKIE_AGE = require_int("SESSION_COOKIE_AGE_SECONDS")
+
+
+# Accounts and login
+
+LOGIN_PENDING_TTL_SECONDS = require_int("LOGIN_PENDING_TTL_SECONDS")
+ADMIN_INVITE_TTL_HOURS = require_int("ADMIN_INVITE_TTL_HOURS")
+RECOVERY_CODE_COUNT = require_int("RECOVERY_CODE_COUNT")
+OTP_TOTP_ISSUER = require_env("APP_NAME")
+
+
 # Password validation
 
 AUTH_PASSWORD_VALIDATORS = [
@@ -96,8 +123,17 @@ AUTH_PASSWORD_VALIDATORS = [
 # API
 
 REST_FRAMEWORK = {
+    'DEFAULT_AUTHENTICATION_CLASSES': ['rest_framework.authentication.SessionAuthentication'],
     # Every route needs a logged-in user unless its view opts out with a documented reason.
     'DEFAULT_PERMISSION_CLASSES': ['rest_framework.permissions.IsAuthenticated'],
+    'DEFAULT_PAGINATION_CLASS': 'utils.api.NewestFirstPagination',
+    'PAGE_SIZE': require_int("API_PAGE_SIZE"),
+    'DEFAULT_THROTTLE_RATES': {
+        'login_ip': require_env("THROTTLE_LOGIN_IP_RATE"),
+        'login_account': require_env("THROTTLE_LOGIN_ACCOUNT_RATE"),
+        'second_step': require_env("THROTTLE_SECOND_STEP_RATE"),
+        'invite': require_env("THROTTLE_INVITE_RATE"),
+    },
 }
 
 
@@ -111,7 +147,7 @@ if not DEBUG:
 
 # Internationalization
 
-LANGUAGE_CODE = 'en-us'
+LANGUAGE_CODE = 'fr'
 
 TIME_ZONE = 'UTC'
 

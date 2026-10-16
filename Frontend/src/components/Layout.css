@@ -1,0 +1,9 @@
+/* A fixed layer instead of background-attachment: fixed, which phones ignore. */
+.page-backdrop {
+  position: fixed;
+  inset: var(--header-height) 0 0 0;
+  z-index: -1;
+  padding: 16px;
+  background: #000 url('../assets/brand/genz-logo-large.jpg') center / contain no-repeat;
+  background-origin: content-box;
+}

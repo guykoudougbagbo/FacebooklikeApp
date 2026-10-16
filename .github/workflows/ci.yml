@@ -32,6 +32,18 @@ jobs:
       POSTGRES_PASSWORD: ci-only-password
       POSTGRES_HOST: localhost
       POSTGRES_PORT: "5432"
+      # Tests swap in an in-memory cache, so no Redis server is needed here.
+      REDIS_URL: redis://localhost:6379/0
+      APP_NAME: GenZ
+      SESSION_COOKIE_AGE_SECONDS: "1209600"
+      LOGIN_PENDING_TTL_SECONDS: "600"
+      ADMIN_INVITE_TTL_HOURS: "48"
+      RECOVERY_CODE_COUNT: "10"
+      API_PAGE_SIZE: "20"
+      THROTTLE_LOGIN_IP_RATE: 20/h
+      THROTTLE_LOGIN_ACCOUNT_RATE: 10/h
+      THROTTLE_SECOND_STEP_RATE: 10/h
+      THROTTLE_INVITE_RATE: 30/h
     defaults:
       run:
         working-directory: Backend
