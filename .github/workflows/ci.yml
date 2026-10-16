@@ -44,6 +44,23 @@ jobs:
       THROTTLE_LOGIN_ACCOUNT_RATE: 10/h
       THROTTLE_SECOND_STEP_RATE: 10/h
       THROTTLE_INVITE_RATE: 30/h
+      # Tests swap in throwaway folders and never send jobs to the queue.
+      MEDIA_ROOT: media
+      MEDIA_URL: /media/
+      PHOTO_ORIGINALS_ROOT: private_uploads
+      POST_MAX_TEXT_LENGTH: "5000"
+      POST_MAX_PHOTOS: "10"
+      PHOTO_MAX_UPLOAD_BYTES: "15728640"
+      PHOTO_MAX_PIXELS: "50000000"
+      PHOTO_FEED_MAX_PX: "1080"
+      PHOTO_FULL_MAX_PX: "2048"
+      PHOTO_WEBP_QUALITY: "82"
+      CELERY_BROKER_URL: redis://localhost:6379/1
+      POST_REPAIR_INTERVAL_SECONDS: "600"
+      POST_PROCESSING_TIMEOUT_SECONDS: "900"
+      POST_PROCESSING_MAX_ATTEMPTS: "3"
+      POST_REPAIR_BATCH_SIZE: "200"
+      POST_REPAIR_APPLY: "false"
     defaults:
       run:
         working-directory: Backend

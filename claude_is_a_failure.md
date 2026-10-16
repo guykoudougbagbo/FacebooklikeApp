@@ -3,6 +3,7 @@
 ## Patterns
 
 - **Missing task opening line** | count: 1 | entries: F-001 | hook: none
+- **New required setting not added to CI** | count: 1 | entries: F-006 | hook: none (scriptable: compare Backend/.env.example with ci.yml)
 - **Hook misjudged what counts as a user message** | count: 1 | entries: F-005 | hook: built (stop_preflight_check.py, fixed)
 - **Tests not isolated from local services** | count: 1 | entries: F-004 | hook: none
 - **Coded from memory instead of the source** | count: 2 | entries: F-002, F-003 | hook: not hookable (no script can tell whether behaviour was read before it was relied on; rule tightened in Conventions instead)
@@ -58,4 +59,13 @@
 - **How it was caught:** the hook blocked the turn; checked against the transcript
 - **Fix:** `stop_preflight_check.py` ignores entries with `promptSource: system`; added a test reproducing the case. Re-ran the hook logic on the real transcript: it now finds the right message and the marker.
 - **Pattern:** Hook misjudged what counts as a user message
+
+### F-006: Step 3 pushed without its new required settings in CI
+
+- **Date:** 2026-10-16
+- **Section:** Conventions
+- **Rule broken:** "Required config values have no fallback defaults" is followed, but I didn't add the new values to `.github/workflows/ci.yml`, so the backend job failed with "Missing required setting MEDIA_ROOT".
+- **How it was caught:** failed CI run 38983367213
+- **Fix:** Added all step 3 settings to the CI job; checked that every key in `Backend/.env.example` is in CI and that `manage.py check` passes with only the CI settings.
+- **Pattern:** New required setting not added to CI
 
