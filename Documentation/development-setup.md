@@ -12,7 +12,7 @@ Installed with Homebrew from `/opt/homebrew` (the Apple Silicon install, not the
 | Node | 24 (LTS) | Frontend (React + Vite) |
 | PostgreSQL | 18 | Database |
 | Redis | 8 | Instant messaging and background jobs (later steps) |
-| FFmpeg | 9 | Mixing sound into videos (later steps) |
+| FFmpeg | 9 | Converting videos and mixing their sound (the worker runs it) |
 | Celery | 5.6 | Background worker that prepares photos (Python package, uses Redis) |
 
 PostgreSQL and Redis run in the background: `brew services list` shows them.
@@ -39,7 +39,7 @@ cd Backend
 
 `--pool threads` is for macOS: there, Celery 5.6's default process pool starts its helper processes with "spawn", which skips the worker's setup and makes every job fail with `not enough values to unpack` (celery/celery issue 9894). Linux servers keep the default process pool.
 
-Without the worker, posts with photos stay at "Publication en cours…".
+Without the worker, posts with photos or videos stay at "Publication en cours…".
 
 - Every setting in `.env.example` is required. The server stops at startup with a clear message if one is missing or invalid.
 - `.env` holds secrets and is never committed.
@@ -48,12 +48,16 @@ Without the worker, posts with photos stay at "Publication en cours…".
 - Business logic lives in `Backend/utils/`; route files only define routes.
 - Tests use an in-memory cache instead of Redis, so running them never touches your Redis data.
 
-### Posts and photos
+### Posts, photos and videos
 
-- Logic lives in `Backend/utils/posts/` (`posts.py` for posts and the repair job, `photos.py` for checking and resizing photos).
+- Logic lives in `Backend/utils/posts/`: `posts.py` (posts, processing, repair job), `uploads.py` (reading an upload request), `photos.py` and `videos.py`.
+- Each post holds up to `POST_MAX_MEDIA` items (`PostMedia`, kind `photo` or `video`), in order.
 - An upload is checked by actually opening it as an image (JPEG, PNG, WebP or HEIC), within `PHOTO_MAX_UPLOAD_BYTES` and `PHOTO_MAX_PIXELS`. The original goes to private storage (`PHOTO_ORIGINALS_ROOT`, never served).
 - The worker builds two WebP versions (feed and full screen, sized by `PHOTO_FEED_MAX_PX` / `PHOTO_FULL_MAX_PX`), turns phone photos upright, and drops all hidden metadata such as GPS location. Then it deletes the original.
-- The repair job (`posts.tasks.repair_stuck_photos`, every `POST_REPAIR_INTERVAL_SECONDS`) retries photos stuck longer than `POST_PROCESSING_TIMEOUT_SECONDS` and gives up after `POST_PROCESSING_MAX_ATTEMPTS`. It starts in log-only mode: with `POST_REPAIR_APPLY=false` it only writes what it would do to the worker log. Read that log, then set it to `true`.
+- Videos are recognised by their first bytes (MP4/MOV or WebM; music: MP3, M4A, WAV, OGG, AAC), within `VIDEO_MAX_UPLOAD_BYTES` / `MUSIC_MAX_UPLOAD_BYTES`. The worker runs FFmpeg (`FFMPEG_BINARY`, `FFPROBE_BINARY`) only on local files of the detected format (`-protocol_whitelist file`, `-format_whitelist`), so a crafted file can't make it open playlists or network addresses. It refuses videos longer than `VIDEO_MAX_SECONDS`.
+- The conversion: H.264 MP4 at most `VIDEO_MAX_PX` on the long side (`VIDEO_CRF` quality), turned upright, with the index first so playback starts while loading; sound is the original at `original_volume` % mixed with the looped music at `music_volume` % (`amix normalize=0`), or no sound at all when both are 0. All metadata (including phone GPS location) is dropped, and a WebP cover image is made. Each FFmpeg run is limited to `VIDEO_PROCESSING_TIMEOUT_SECONDS`.
+- In production, run the worker as a user that can't write outside the media folders, since FFmpeg reads files from the public.
+- The repair job (`posts.tasks.repair_stuck_media`, every `POST_REPAIR_INTERVAL_SECONDS`) retries photos and videos stuck longer than `POST_PROCESSING_TIMEOUT_SECONDS` and gives up after `POST_PROCESSING_MAX_ATTEMPTS`. It starts in log-only mode: with `POST_REPAIR_APPLY=false` it only writes what it would do to the worker log. Read that log, then set it to `true`.
 - Production must also limit request size at the web server (for example nginx `client_max_body_size`), since Django checks each photo only after it has arrived.
 
 ### Creating the page owner

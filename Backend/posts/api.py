@@ -5,7 +5,7 @@ from rest_framework.response import Response
 from rest_framework.views import APIView
 
 from utils.api import NewestFirstPagination, has_permission
-from utils.posts import photos, posts
+from utils.posts import photos, posts, uploads, videos
 from utils.posts.serializers import AdminPostSerializer, PublicPostSerializer
 
 NOT_FOUND = "Publication introuvable."
@@ -20,16 +20,8 @@ def _error(message, code=status.HTTP_400_BAD_REQUEST):
     return Response({"detail": message}, status=code)
 
 
-def _upload_parts(request):
-    data = request.data
-    body = data.get("body", "")
-    uploads = request.FILES.getlist("photos")
-    raw_ids = data.getlist("remove_photo_ids") if hasattr(data, "getlist") else data.get("remove_photo_ids", [])
-    try:
-        remove_ids = [int(i) for i in raw_ids]
-    except (TypeError, ValueError):
-        remove_ids = None
-    return body, uploads, remove_ids
+# Every error whose message is written for the admin to read.
+ADMIN_ERRORS = (posts.PostError, photos.PhotoError, videos.VideoError, uploads.UploadError)
 
 
 class PublicFeedView(generics.ListAPIView):
@@ -54,10 +46,10 @@ class AdminPostListView(generics.ListAPIView):
         return posts.admin_feed()
 
     def post(self, request):
-        body, uploads, _ = _upload_parts(request)
         try:
-            post = posts.create_post(request.user, body, uploads)
-        except (posts.PostError, photos.PhotoError) as exc:
+            items = uploads.parse(request.data, request.FILES)
+            post = posts.create_post(request.user, request.data.get("body", ""), items)
+        except ADMIN_ERRORS as exc:
             return _error(str(exc))
         return Response(self._one(post.id), status=status.HTTP_201_CREATED)
 
@@ -78,16 +70,15 @@ class AdminPostDetailView(APIView):
         return Response(AdminPostSerializer(post, context={"request": request}).data)
 
     def patch(self, request, pk):
-        body, uploads, remove_ids = _upload_parts(request)
-        if remove_ids is None:
-            return _error("Liste de photos à retirer invalide.")
         try:
-            posts.edit_post(pk, request.user, body, uploads, remove_ids)
+            remove_ids = uploads.parse_ids(request.data, "remove_media_ids")
+            items = uploads.parse(request.data, request.FILES)
+            posts.edit_post(pk, request.user, request.data.get("body", ""), items, remove_ids)
         except posts.PostNotFound:
             return _error(NOT_FOUND, status.HTTP_404_NOT_FOUND)
         except PermissionError:
             return _error(NOT_ALLOWED, status.HTTP_403_FORBIDDEN)
-        except (posts.PostError, photos.PhotoError) as exc:
+        except ADMIN_ERRORS as exc:
             return _error(str(exc))
         return self.get(request, pk)
 

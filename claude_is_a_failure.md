@@ -3,10 +3,10 @@
 ## Patterns
 
 - **Missing task opening line** | count: 1 | entries: F-001 | hook: none
-- **New required setting not added to CI** | count: 1 | entries: F-006 | hook: none (scriptable: compare Backend/.env.example with ci.yml)
+- **New required setting not added to CI** | count: 1 | entries: F-006 | hook: built (test `utils.tests.CiSettingsTest` fails when a required setting is missing from CI)
 - **Hook misjudged what counts as a user message** | count: 1 | entries: F-005 | hook: built (stop_preflight_check.py, fixed)
 - **Tests not isolated from local services** | count: 1 | entries: F-004 | hook: none
-- **Coded from memory instead of the source** | count: 2 | entries: F-002, F-003 | hook: not hookable (no script can tell whether behaviour was read before it was relied on; rule tightened in Conventions instead)
+- **Coded from memory instead of the source** | count: 3 | entries: F-002, F-003, F-007 | hook: not hookable (no script can tell whether behaviour was read before it was relied on; rule tightened in Conventions instead)
 
 ## Entries
 
@@ -68,4 +68,14 @@
 - **How it was caught:** failed CI run 38983367213
 - **Fix:** Added all step 3 settings to the CI job; checked that every key in `Backend/.env.example` is in CI and that `manage.py check` passes with only the CI settings.
 - **Pattern:** New required setting not added to CI
+
+### F-007: Role sync clashed with Django 6.1's permission rename
+
+- **Date:** 2026-10-16
+- **Section:** Conventions
+- **Rule broken:** "Before relying on how a library, framework or tool behaves (defaults, shorthands, headers, what it overwrites), read that behaviour in the installed version's source or docs."
+- **What happened:** In step 3 my post-migrate role sync created every app's permissions itself. When step 4 renamed PostPhoto to PostMedia, it created the new permission names before Django 6.1's own rename step ran, so that step failed with "4 permission rename conflict(s)". I hadn't read how Django orders its post-migrate permission handlers.
+- **How it was caught:** `migrate` failed on the local database
+- **Fix:** Read `django/contrib/auth/apps.py` and `emit_post_migrate_signal`; the sync now runs once, after the last app, without creating permissions itself. Proved on a throwaway database migrated from the old version; removed the 4 unused obsolete permissions locally; added a test.
+- **Pattern:** Coded from memory instead of the source
 

@@ -1,11 +1,11 @@
 import { useEffect, useRef, useState } from 'react'
 import './Post.css'
 
-export default function Lightbox({ photos, startIndex, onClose }) {
+export default function Lightbox({ items, startIndex, onClose }) {
   const [index, setIndex] = useState(startIndex)
   const closeButton = useRef(null)
-  const count = photos.length
-  const photo = photos[index]
+  const count = items.length
+  const item = items[index]
 
   useEffect(() => {
     const previousFocus = document.activeElement
@@ -29,28 +29,44 @@ export default function Lightbox({ photos, startIndex, onClose }) {
   }, [count, onClose])
 
   return (
-    <div className="lightbox" role="dialog" aria-modal="true" aria-label="Photo en grand" onClick={onClose}>
-      <img
-        className="lightbox__image"
-        src={photo.full_url}
-        width={photo.width}
-        height={photo.height}
-        alt={`Photo ${index + 1} sur ${count}`}
-        onClick={(e) => e.stopPropagation()}
-      />
+    <div className="lightbox" role="dialog" aria-modal="true" aria-label="Photo ou vidéo en grand" onClick={onClose}>
+      {item.kind === 'video' ? (
+        <video
+          key={item.id}
+          className="lightbox__image"
+          src={item.video_url}
+          poster={item.poster_url}
+          width={item.width}
+          height={item.height}
+          controls
+          autoPlay
+          playsInline
+          aria-label={`Vidéo ${index + 1} sur ${count}`}
+          onClick={(e) => e.stopPropagation()}
+        />
+      ) : (
+        <img
+          className="lightbox__image"
+          src={item.full_url}
+          width={item.width}
+          height={item.height}
+          alt={`Photo ${index + 1} sur ${count}`}
+          onClick={(e) => e.stopPropagation()}
+        />
+      )}
       <button ref={closeButton} type="button" className="lightbox__button lightbox__close" onClick={onClose} aria-label="Fermer">×</button>
       {count > 1 && (
         <>
           <button
             type="button"
             className="lightbox__button lightbox__prev"
-            aria-label="Photo précédente"
+            aria-label="Précédent"
             onClick={(e) => { e.stopPropagation(); setIndex((i) => (i - 1 + count) % count) }}
           >‹</button>
           <button
             type="button"
             className="lightbox__button lightbox__next"
-            aria-label="Photo suivante"
+            aria-label="Suivant"
             onClick={(e) => { e.stopPropagation(); setIndex((i) => (i + 1) % count) }}
           >›</button>
           <p className="lightbox__counter">{index + 1} / {count}</p>

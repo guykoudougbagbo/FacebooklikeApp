@@ -1,7 +1,7 @@
-import { screen, within } from '@testing-library/react'
+import { fireEvent, screen, within } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { expect, test, vi } from 'vitest'
-import { adminPost, photo, publicPost } from '../test/posts'
+import { adminPost, photo, publicPost, video } from '../test/posts'
 import { ADMIN, loggedInAs, loggedOut, mockApi, page, renderApp } from '../test/renderApp'
 
 const file = (name) => new File(['img'], name, { type: 'image/jpeg' })
@@ -9,7 +9,7 @@ const file = (name) => new File(['img'], name, { type: 'image/jpeg' })
 test('visitors see the page as the author, with dates, links and photos, and nothing to edit', async () => {
   mockApi({
     ...loggedOut,
-    'GET /posts/': page([publicPost(1, { body: 'Infos : https://example.com', photos: [photo(11), photo(12)] })]),
+    'GET /posts/': page([publicPost(1, { body: 'Infos : https://example.com', media: [photo(11), photo(12)] })]),
   })
   renderApp('/')
   const post = await screen.findByRole('article', { name: 'Publication de GenZ' })
@@ -32,18 +32,18 @@ test('an admin writes a post with photos, removes one before sending, and sees i
   const calls = mockApi({
     ...loggedInAs(ADMIN),
     'GET /admin/posts/': page([adminPost(1, { body: 'Ancienne publication' })]),
-    'POST /admin/posts/': { status: 201, body: adminPost(2, { body: 'Nouvelle publication', status: 'processing', photos: [{ id: 21, status: 'pending', feed_url: null, full_url: null, width: null, height: null }] }) },
+    'POST /admin/posts/': { status: 201, body: adminPost(2, { body: 'Nouvelle publication', status: 'processing', media: [{ id: 21, kind: 'photo', status: 'pending', feed_url: null, full_url: null, width: null, height: null }] }) },
   })
   renderApp('/')
   const user = userEvent.setup()
   await user.type(await screen.findByLabelText('Texte de la publication'), 'Nouvelle publication')
-  await user.upload(screen.getByTestId('photo-input'), [file('a.jpg'), file('b.jpg')])
+  await user.upload(screen.getByTestId('media-input'), [file('a.jpg'), file('b.jpg')])
   await user.click(screen.getByRole('button', { name: 'Enlever a.jpg' }))
   await user.click(screen.getByRole('button', { name: 'Publier' }))
 
   const sent = calls.find((c) => c.method === 'POST' && c.path === '/admin/posts/').body
   expect(sent.body).toEqual(['Nouvelle publication'])
-  expect(sent.photos.map((f) => f.name)).toEqual(['b.jpg'])
+  expect(sent.media.map((f) => f.name)).toEqual(['b.jpg'])
 
   const posts = await screen.findAllByRole('article', { name: 'Publication de GenZ' })
   expect(within(posts[0]).getByText('Nouvelle publication')).toBeTruthy()
@@ -64,8 +64,8 @@ test('a refused post shows why and keeps what was typed', async () => {
 test('the author edits text and removes a photo', async () => {
   const calls = mockApi({
     ...loggedInAs(ADMIN),
-    'GET /admin/posts/': page([adminPost(1, { body: 'Avant', photos: [photo(11, { status: 'ready' }), photo(12, { status: 'ready' })] })]),
-    'PATCH /admin/posts/1/': { body: adminPost(1, { body: 'Après', edited_at: new Date().toISOString(), photos: [photo(12, { status: 'ready' })] }) },
+    'GET /admin/posts/': page([adminPost(1, { body: 'Avant', media: [photo(11, { status: 'ready' }), photo(12, { status: 'ready' })] })]),
+    'PATCH /admin/posts/1/': { body: adminPost(1, { body: 'Après', edited_at: new Date().toISOString(), media: [photo(12, { status: 'ready' })] }) },
   })
   renderApp('/')
   const user = userEvent.setup()
@@ -74,11 +74,11 @@ test('the author edits text and removes a photo', async () => {
   const text = within(post).getByLabelText('Texte de la publication')
   await user.clear(text)
   await user.type(text, 'Après')
-  await user.click(within(post).getByRole('button', { name: 'Retirer la photo 1' }))
+  await user.click(within(post).getByRole('button', { name: "Retirer l'élément 1" }))
   await user.click(within(post).getByRole('button', { name: 'Enregistrer' }))
 
   const sent = calls.find((c) => c.method === 'PATCH').body
-  expect(sent).toEqual({ body: ['Après'], remove_photo_ids: ['11'] })
+  expect(sent).toEqual({ body: ['Après'], remove_media_ids: ['11'] })
   expect(await within(post).findByText('Après')).toBeTruthy()
   expect(within(post).getByText(/modifiée/)).toBeTruthy()
   expect(within(post).getAllByRole('button', { name: /Agrandir la photo/ })).toHaveLength(1)
@@ -120,14 +120,14 @@ test('a post being prepared refreshes by itself until its photos are ready', asy
   // Only the refresh timer is faked; reading the fake server's answers still uses real timers.
   vi.useFakeTimers({ shouldAdvanceTime: true, toFake: ['setTimeout', 'clearTimeout'] })
   try {
-    const pending = { id: 11, status: 'pending', feed_url: null, full_url: null, width: null, height: null }
+    const pending = { id: 11, kind: 'photo', status: 'pending', feed_url: null, full_url: null, width: null, height: null }
     let ready = false
     const calls = mockApi({
       ...loggedInAs(ADMIN),
-      'GET /admin/posts/': page([adminPost(1, { body: 'Photos', status: 'processing', photos: [pending] })]),
+      'GET /admin/posts/': page([adminPost(1, { body: 'Photos', status: 'processing', media: [pending] })]),
       'GET /admin/posts/1/': () => ({ body: ready
-        ? adminPost(1, { body: 'Photos', photos: [photo(11, { status: 'ready' })] })
-        : adminPost(1, { body: 'Photos', status: 'processing', photos: [pending] }) }),
+        ? adminPost(1, { body: 'Photos', media: [photo(11, { status: 'ready' })] })
+        : adminPost(1, { body: 'Photos', status: 'processing', media: [pending] }) }),
     })
     const checks = () => calls.filter((c) => c.path === '/admin/posts/1/').length
     renderApp('/')
@@ -165,3 +165,41 @@ test('more posts load with the cursor', async () => {
   await user.click(await screen.findByRole('button', { name: 'Voir plus' }))
   expect(calls.some((c) => c.path === '/posts/' && c.search === '?cursor=next1')).toBe(true)
 })
+
+test('a video gets sound sliders and an optional music file, sent with the post', async () => {
+  const calls = mockApi({
+    ...loggedInAs(ADMIN),
+    'POST /admin/posts/': { status: 201, body: adminPost(3, { status: 'processing', media: [] }) },
+  })
+  renderApp('/')
+  const user = userEvent.setup()
+  await screen.findByLabelText('Texte de la publication')
+  await user.upload(screen.getByTestId('media-input'), [
+    new File(['img'], 'photo.jpg', { type: 'image/jpeg' }),
+    new File(['vid'], 'clip.mp4', { type: 'video/mp4' }),
+  ])
+  expect(screen.queryByLabelText("Musique de la vidéo 1")).toBeNull()
+  fireEvent.change(screen.getByLabelText("Son d'origine de la vidéo 1"), { target: { value: '0' } })
+  await user.upload(screen.getByTestId('music-input-1'), new File(['mp3'], 'chanson.mp3', { type: 'audio/mpeg' }))
+  expect(screen.getByText('Musique : chanson.mp3')).toBeTruthy()
+  fireEvent.change(screen.getByLabelText('Musique de la vidéo 1'), { target: { value: '70' } })
+  await user.click(screen.getByRole('button', { name: 'Publier' }))
+
+  const sent = calls.find((c) => c.method === 'POST' && c.path === '/admin/posts/').body
+  expect(sent.media.map((f) => f.name)).toEqual(['photo.jpg', 'clip.mp4'])
+  expect(sent.sound_original_1).toEqual(['0'])
+  expect(sent.sound_music_1).toEqual(['70'])
+  expect(sent.music_1.map((f) => f.name)).toEqual(['chanson.mp3'])
+  expect(sent.sound_original_0).toBeUndefined()
+})
+
+test('visitors see videos with a cover, length and play button', async () => {
+  mockApi({ ...loggedOut, 'GET /posts/': page([publicPost(1, { media: [video(31)] })]) })
+  renderApp('/')
+  const tile = await screen.findByRole('button', { name: 'Lire la vidéo 1 sur 1' })
+  const player = tile.querySelector('video')
+  expect(player.getAttribute('poster')).toBe('/media/posts/videos/31-poster.webp')
+  expect(player.muted).toBe(true)
+  expect(within(tile).getByText('0:42')).toBeTruthy()
+})
+

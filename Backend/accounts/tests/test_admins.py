@@ -37,6 +37,16 @@ class RolesTest(AccountsTestCase):
         roles.sync_role_groups()
         self.assertEqual(permission_names(Group.objects.get(name=roles.ADMIN)), set(roles.ADMIN_PERMISSIONS))
 
+    def test_roles_sync_only_after_the_last_app(self):
+        from django.apps import apps
+        from accounts.apps import _sync_roles
+
+        with_models = [c for c in apps.get_app_configs() if c.models_module is not None]
+        with mock.patch("utils.accounts.roles.sync_role_groups") as sync:
+            for config in with_models:
+                _sync_roles(sender=config)
+        sync.assert_called_once_with()
+
     def test_role_of(self):
         self.assertEqual(roles.role_of(self.make_owner()), "owner")
         self.assertEqual(roles.role_of(self.make_admin()), "admin")

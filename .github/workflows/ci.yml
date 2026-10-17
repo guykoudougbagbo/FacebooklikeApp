@@ -49,12 +49,21 @@ jobs:
       MEDIA_URL: /media/
       PHOTO_ORIGINALS_ROOT: private_uploads
       POST_MAX_TEXT_LENGTH: "5000"
-      POST_MAX_PHOTOS: "10"
+      POST_MAX_MEDIA: "10"
       PHOTO_MAX_UPLOAD_BYTES: "15728640"
       PHOTO_MAX_PIXELS: "50000000"
       PHOTO_FEED_MAX_PX: "1080"
       PHOTO_FULL_MAX_PX: "2048"
       PHOTO_WEBP_QUALITY: "82"
+      VIDEO_MAX_UPLOAD_BYTES: "314572800"
+      VIDEO_MAX_SECONDS: "180"
+      VIDEO_MAX_PX: "1920"
+      VIDEO_CRF: "23"
+      VIDEO_AUDIO_BITRATE: 128k
+      VIDEO_PROCESSING_TIMEOUT_SECONDS: "600"
+      MUSIC_MAX_UPLOAD_BYTES: "20971520"
+      FFMPEG_BINARY: /usr/bin/ffmpeg
+      FFPROBE_BINARY: /usr/bin/ffprobe
       CELERY_BROKER_URL: redis://localhost:6379/1
       POST_REPAIR_INTERVAL_SECONDS: "600"
       POST_PROCESSING_TIMEOUT_SECONDS: "900"
@@ -72,6 +81,8 @@ jobs:
           cache: pip
           cache-dependency-path: Backend/requirements.txt
       - run: pip install -r requirements.txt
+      # Video tests convert real clips, so the worker's video tool must be present.
+      - run: sudo apt-get update && sudo apt-get install -y --no-install-recommends ffmpeg
       # A fresh random key per run, so no real secret lives in the repo.
       - run: echo "DJANGO_SECRET_KEY=$(python -c 'import secrets; print(secrets.token_urlsafe(50))')" >> "$GITHUB_ENV"
       - run: python manage.py check

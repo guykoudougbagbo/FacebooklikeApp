@@ -40,6 +40,10 @@ describe('api', () => {
     await expect(api('/x/')).rejects.toThrow('Saisissez une adresse e-mail valide.')
     vi.stubGlobal('fetch', respond(429, { detail: 'Request was throttled.' }))
     await expect(api('/x/')).rejects.toThrow('Trop de tentatives')
+    for (const status of [502, 503, 504]) {
+      vi.stubGlobal('fetch', respond(status, undefined))
+      await expect(api('/x/')).rejects.toThrow('Le serveur ne répond pas. Réessayez dans un instant.')
+    }
     vi.stubGlobal('fetch', vi.fn(async () => { throw new TypeError('offline') }))
     await expect(api('/x/')).rejects.toMatchObject({ status: 0 })
   })

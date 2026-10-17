@@ -125,12 +125,21 @@ STORAGES = {
 # Posts and photos
 
 POST_MAX_TEXT_LENGTH = require_int("POST_MAX_TEXT_LENGTH")
-POST_MAX_PHOTOS = require_int("POST_MAX_PHOTOS")
+POST_MAX_MEDIA = require_int("POST_MAX_MEDIA")
 PHOTO_MAX_UPLOAD_BYTES = require_int("PHOTO_MAX_UPLOAD_BYTES")
 PHOTO_MAX_PIXELS = require_int("PHOTO_MAX_PIXELS")
 PHOTO_FEED_MAX_PX = require_int("PHOTO_FEED_MAX_PX")
 PHOTO_FULL_MAX_PX = require_int("PHOTO_FULL_MAX_PX")
 PHOTO_WEBP_QUALITY = require_int("PHOTO_WEBP_QUALITY")
+VIDEO_MAX_UPLOAD_BYTES = require_int("VIDEO_MAX_UPLOAD_BYTES")
+VIDEO_MAX_SECONDS = require_int("VIDEO_MAX_SECONDS")
+VIDEO_MAX_PX = require_int("VIDEO_MAX_PX")
+VIDEO_CRF = require_int("VIDEO_CRF")
+VIDEO_AUDIO_BITRATE = require_env("VIDEO_AUDIO_BITRATE")
+VIDEO_PROCESSING_TIMEOUT_SECONDS = require_int("VIDEO_PROCESSING_TIMEOUT_SECONDS")
+MUSIC_MAX_UPLOAD_BYTES = require_int("MUSIC_MAX_UPLOAD_BYTES")
+FFMPEG_BINARY = require_env("FFMPEG_BINARY")
+FFPROBE_BINARY = require_env("FFPROBE_BINARY")
 POST_PROCESSING_TIMEOUT_SECONDS = require_int("POST_PROCESSING_TIMEOUT_SECONDS")
 POST_PROCESSING_MAX_ATTEMPTS = require_int("POST_PROCESSING_MAX_ATTEMPTS")
 POST_REPAIR_BATCH_SIZE = require_int("POST_REPAIR_BATCH_SIZE")
@@ -148,8 +157,8 @@ CELERY_WORKER_PREFETCH_MULTIPLIER = 1
 # Keeps the schedule in memory, so the worker writes no schedule file to disk.
 CELERY_BEAT_SCHEDULER = 'celery.beat:Scheduler'
 CELERY_BEAT_SCHEDULE = {
-    'repair-stuck-photos': {
-        'task': 'posts.tasks.repair_stuck_photos',
+    'repair-stuck-media': {
+        'task': 'posts.tasks.repair_stuck_media',
         'schedule': require_int("POST_REPAIR_INTERVAL_SECONDS"),
     },
 }

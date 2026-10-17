@@ -63,14 +63,14 @@ def render_web_versions(original_name):
             upright = ImageOps.exif_transpose(image)
             has_alpha = upright.mode in ("RGBA", "LA") or (upright.mode == "P" and "transparency" in upright.info)
             upright = upright.convert("RGBA" if has_alpha else "RGB")
-            full, feed = _fit(upright, full_px), _fit(upright, feed_px)
+            full, feed = fit(upright, full_px), fit(upright, feed_px)
     except UNREADABLE:
         raise PhotoError("Photo illisible.") from None
 
     base = f"posts/photos/{uuid.uuid4().hex}"
-    full_name = default_storage.save(f"{base}-full.webp", ContentFile(_webp(full)))
+    full_name = default_storage.save(f"{base}-full.webp", ContentFile(webp_bytes(full)))
     try:
-        feed_name = default_storage.save(f"{base}-feed.webp", ContentFile(_webp(feed)))
+        feed_name = default_storage.save(f"{base}-feed.webp", ContentFile(webp_bytes(feed)))
     except Exception:
         default_storage.delete(full_name)
         raise
@@ -86,13 +86,13 @@ def delete_files(public_names=(), private_names=()):
             private_storage().delete(name)
 
 
-def _fit(image, max_px):
+def fit(image, max_px):
     copy = image.copy()
     copy.thumbnail((max_px, max_px), Image.Resampling.LANCZOS)
     return copy
 
 
-def _webp(image):
+def webp_bytes(image):
     buffer = BytesIO()
     image.save(buffer, "WEBP", quality=settings.PHOTO_WEBP_QUALITY, method=4)
     return buffer.getvalue()

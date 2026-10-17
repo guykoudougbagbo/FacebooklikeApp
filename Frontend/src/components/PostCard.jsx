@@ -2,24 +2,25 @@ import { useState } from 'react'
 import { api } from '../api/client'
 import logo from '../assets/brand/genz-logo.jpg'
 import { formatDateTime, formatRelative } from '../utils/format'
-import PhotoGrid from './PhotoGrid'
+import { readyItems } from '../utils/media'
+import MediaGrid from './MediaGrid'
 import PostComposer from './PostComposer'
 import PostText from './PostText'
 import { Button, ErrorMessage, Notice } from './ui'
 import './Post.css'
 
 function AdminStatus({ post }) {
-  const pending = post.photos.filter((p) => p.status === 'pending').length
-  const failed = post.photos.filter((p) => p.status === 'failed').length
+  const pending = post.media.filter((m) => m.status === 'pending').length
+  const failed = post.media.filter((m) => m.status === 'failed').length
   return (
     <>
-      {post.status === 'processing' && <Notice>Publication en cours… Les photos sont en préparation.</Notice>}
+      {post.status === 'processing' && <Notice>Publication en cours… Les photos et vidéos sont en préparation.</Notice>}
       {post.status === 'failed' && (
-        <p className="message message--error">Échec de la publication : aucune photo n'a pu être traitée. Supprimez-la et réessayez.</p>
+        <p className="message message--error">Échec de la publication : aucune photo ni vidéo n'a pu être traitée. Supprimez-la et réessayez.</p>
       )}
-      {post.status === 'published' && pending > 0 && <Notice>Nouvelles photos en préparation…</Notice>}
+      {post.status === 'published' && pending > 0 && <Notice>Nouvelles photos ou vidéos en préparation…</Notice>}
       {failed > 0 && post.status !== 'failed' && (
-        <Notice>{failed === 1 ? "1 photo n'a pas pu être traitée." : `${failed} photos n'ont pas pu être traitées.`}</Notice>
+        <Notice>{failed === 1 ? "1 photo ou vidéo n'a pas pu être traitée." : `${failed} photos ou vidéos n'ont pas pu être traitées.`}</Notice>
       )}
     </>
   )
@@ -28,7 +29,6 @@ function AdminStatus({ post }) {
 export default function PostCard({ post, admin = false, onChanged, onDeleted }) {
   const [editing, setEditing] = useState(false)
   const [error, setError] = useState('')
-  const readyPhotos = post.photos.filter((p) => p.feed_url && (p.status ?? 'ready') === 'ready')
   const when = post.published_at ?? post.created_at
 
   async function remove() {
@@ -72,7 +72,7 @@ export default function PostCard({ post, admin = false, onChanged, onDeleted }) 
       ) : (
         <>
           <PostText text={post.body} />
-          <PhotoGrid photos={readyPhotos} />
+          <MediaGrid items={readyItems(post.media)} />
         </>
       )}
     </article>

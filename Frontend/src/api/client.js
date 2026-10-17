@@ -1,5 +1,8 @@
 const GENERIC_ERROR = 'Une erreur est survenue. Réessayez.'
 const TOO_MANY = 'Trop de tentatives. Patientez un moment avant de réessayer.'
+const SERVER_DOWN = 'Le serveur ne répond pas. Réessayez dans un instant.'
+// What a gateway or proxy answers when the server behind it is stopped or unreachable.
+const SERVER_DOWN_STATUSES = new Set([502, 503, 504])
 
 export class ApiError extends Error {
   constructor(status, message, data) {
@@ -26,6 +29,7 @@ async function ensureCsrfCookie() {
 
 function errorMessage(status, data) {
   if (status === 429) return TOO_MANY
+  if (SERVER_DOWN_STATUSES.has(status)) return SERVER_DOWN
   if (typeof data?.detail === 'string') return data.detail
   if (data && typeof data === 'object') {
     const first = Object.values(data).flat()[0]

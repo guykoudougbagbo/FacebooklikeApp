@@ -4,21 +4,37 @@ from rest_framework import serializers
 from utils.posts.posts import can_delete, can_edit
 
 
-class PhotoSerializer(serializers.Serializer):
+def _url(name):
+    return default_storage.url(name) if name else None
+
+
+class MediaSerializer(serializers.Serializer):
     id = serializers.IntegerField()
+    kind = serializers.CharField()
     width = serializers.IntegerField()
     height = serializers.IntegerField()
+    # Photos
     feed_url = serializers.SerializerMethodField()
     full_url = serializers.SerializerMethodField()
+    # Videos
+    video_url = serializers.SerializerMethodField()
+    poster_url = serializers.SerializerMethodField()
+    duration_seconds = serializers.FloatField()
 
-    def get_feed_url(self, photo):
-        return default_storage.url(photo.feed_name) if photo.feed_name else None
+    def get_feed_url(self, item):
+        return _url(item.feed_name)
 
-    def get_full_url(self, photo):
-        return default_storage.url(photo.full_name) if photo.full_name else None
+    def get_full_url(self, item):
+        return _url(item.full_name)
+
+    def get_video_url(self, item):
+        return _url(item.video_name)
+
+    def get_poster_url(self, item):
+        return _url(item.poster_name)
 
 
-class AdminPhotoSerializer(PhotoSerializer):
+class AdminMediaSerializer(MediaSerializer):
     status = serializers.CharField()
 
 
@@ -27,7 +43,7 @@ class PublicPostSerializer(serializers.Serializer):
     body = serializers.CharField()
     published_at = serializers.DateTimeField()
     edited_at = serializers.DateTimeField()
-    photos = PhotoSerializer(source="visible_photos", many=True)
+    media = MediaSerializer(source="visible_media", many=True)
 
 
 class AdminPostSerializer(serializers.Serializer):
@@ -38,7 +54,7 @@ class AdminPostSerializer(serializers.Serializer):
     published_at = serializers.DateTimeField()
     edited_at = serializers.DateTimeField()
     author = serializers.CharField(source="author.display_name")
-    photos = AdminPhotoSerializer(source="visible_photos", many=True)
+    media = AdminMediaSerializer(source="visible_media", many=True)
     can_edit = serializers.SerializerMethodField()
     can_delete = serializers.SerializerMethodField()
 

@@ -10,10 +10,10 @@ import './HomePage.css'
 const PROCESSING_POLL_MS = 3000
 
 function isProcessing(post) {
-  return post.status === 'processing' || post.photos.some((p) => p.status === 'pending')
+  return post.status === 'processing' || post.media.some((m) => m.status === 'pending')
 }
 
-/** Refreshes posts whose photos are still being prepared, until they're done. */
+/** Refreshes posts whose photos or videos are still being prepared, until they're done. */
 function useProcessingRefresh(feed, enabled) {
   const { items, replaceItem } = feed
 

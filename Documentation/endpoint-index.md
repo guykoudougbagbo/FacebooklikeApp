@@ -44,12 +44,12 @@ All paths start with `/api/`. Routes are defined in `Backend/<app>/urls.py` and 
 
 | Method | Path | Who can call it | Notes |
 |--------|------|-----------------|-------|
-| GET | `posts/` | Public | The page's feed: published posts only, newest first, cursor-paginated. Shows the page as author (no admin names) and only photos that are ready. |
-| GET | `admin/posts/` | Owner and admins (`posts.view_post_details`) | Every post, any status, newest first, with author name, photo statuses and `can_edit` / `can_delete` for the caller. |
-| POST | `admin/posts/` | Owner and admins (`posts.create_post`) | Multipart: `body`, `photos` (repeat for several). Text-only posts publish at once; with photos the post is `processing` until the worker has built the web versions. |
+| GET | `posts/` | Public | The page's feed: published posts only, newest first, cursor-paginated. Shows the page as author (no admin names) and only photos and videos that are ready. Each `media` item has `kind` (`photo` or `video`); photos give `feed_url`/`full_url`, videos give `video_url`/`poster_url`/`duration_seconds`. |
+| GET | `admin/posts/` | Owner and admins (`posts.view_post_details`) | Every post, any status, newest first, with author name, each media item's status and `can_edit` / `can_delete` for the caller. |
+| POST | `admin/posts/` | Owner and admins (`posts.create_post`) | Multipart: `body`; `media` (repeat, in display order; photos and videos mixed). For the video at position *i*: `sound_original_<i>` and `sound_music_<i>` (0-100) and an optional `music_<i>` audio file. Text-only posts publish at once; otherwise the post is `processing` until the worker has prepared every item. |
 | GET | `admin/posts/<id>/` | Owner and admins (`posts.view_post_details`) | One post, used to follow processing. |
-| PATCH | `admin/posts/<id>/` | The post's author (`posts.edit_own_post`) | Multipart: `body`, new `photos`, `remove_photo_ids` (repeat). |
-| DELETE | `admin/posts/<id>/` | The post's author (`posts.delete_own_post`) or the owner (`posts.delete_any_post`) | Deletes the post and its photo files. |
+| PATCH | `admin/posts/<id>/` | The post's author (`posts.edit_own_post`) | Multipart: `body`, new `media` (with the same sound fields), `remove_media_ids` (repeat). A video's sound can't be changed after upload: remove it and add it again. |
+| DELETE | `admin/posts/<id>/` | The post's author (`posts.delete_own_post`) or the owner (`posts.delete_any_post`) | Deletes the post and its photo and video files. |
 
-Photo files are served under `MEDIA_URL` (`/media/`). Uploads as received are kept in private storage and deleted once processed.
+Photo and video files are served under `MEDIA_URL` (`/media/`). Uploads as received (and music files) are kept in private storage and deleted once processed.
 

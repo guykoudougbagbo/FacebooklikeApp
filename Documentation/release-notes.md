@@ -13,4 +13,7 @@
 - Admins publish posts from the home page: text with clickable links, plus up to 10 photos. Visitors see them as posts from GenZ, newest first, loading more as they scroll; photos open full screen.
 - Authors can edit or delete their own posts; the owner can delete any post. Admins see who published each post.
 - Photos are checked, resized for fast loading, turned upright, and stripped of hidden data such as GPS location before anyone sees them.
+- Posts can mix photos and videos (up to 10 items). For each video, admins set "Son d'origine" and "Musique" volumes and can add their own music file: keep the sound, mute it, replace it, or mix both. Music loops to the video's length.
+- Videos are converted to play on every device, turned upright, and stripped of hidden data such as GPS location. In the feed they play silently while on screen (not for visitors who asked for less motion or less data use); tapping opens them full screen with sound.
+- When the server is unreachable, the site now says "Le serveur ne répond pas. Réessayez dans un instant." instead of a vague error.
 - The whole site is in French and shows the GenZ logo in the header and as the page background, behind see-through content boxes.

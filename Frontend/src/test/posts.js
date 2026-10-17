@@ -4,6 +4,7 @@ export const minutesAgo = (minutes) => new Date(Date.now() - minutes * 60_000).t
 export function photo(id, extra = {}) {
   return {
     id,
+    kind: 'photo',
     width: 1080,
     height: 720,
     feed_url: `/media/posts/photos/${id}-feed.webp`,
@@ -12,8 +13,23 @@ export function photo(id, extra = {}) {
   }
 }
 
+export function video(id, extra = {}) {
+  return {
+    id,
+    kind: 'video',
+    width: 1080,
+    height: 1920,
+    feed_url: null,
+    full_url: null,
+    video_url: `/media/posts/videos/${id}.mp4`,
+    poster_url: `/media/posts/videos/${id}-poster.webp`,
+    duration_seconds: 42.4,
+    ...extra,
+  }
+}
+
 export function publicPost(id, extra = {}) {
-  return { id, body: 'Bonjour à tous', published_at: minutesAgo(5), edited_at: null, photos: [], ...extra }
+  return { id, body: 'Bonjour à tous', published_at: minutesAgo(5), edited_at: null, media: [], ...extra }
 }
 
 export function adminPost(id, extra = {}) {
