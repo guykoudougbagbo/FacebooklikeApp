@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react'
 import { api } from '../api/client'
 import logo from '../assets/brand/genz-logo.jpg'
 import { followPage, unfollowPage } from '../utils/push'
-import { plural } from '../utils/reactions'
+import { plural } from '@shared/format'
 import { Button, ErrorMessage } from './ui'
 import './Interactions.css'
 

@@ -1,6 +1,6 @@
 import { useId, useState } from 'react'
 import { api } from '../api/client'
-import { formatDateTime, formatRelative } from '../utils/format'
+import { formatDateTime, formatRelative } from '@shared/format'
 import { usePagedList } from '../utils/usePagedList'
 import PostText from './PostText'
 import { Button, ErrorMessage, Notice } from './ui'

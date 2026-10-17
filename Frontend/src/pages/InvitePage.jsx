@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react'
 import { useLocation, useNavigate } from 'react-router'
 import { api } from '../api/client'
 import { Button, Card, ErrorMessage, Loading, TextField } from '../components/ui'
-import { formatDateTime } from '../utils/format'
+import { formatDateTime } from '@shared/format'
 
 function PasswordFields() {
   return (

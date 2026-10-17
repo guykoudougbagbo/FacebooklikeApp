@@ -1,5 +1,5 @@
 import { afterEach, beforeEach, describe, expect, test, vi } from 'vitest'
-import { api, nextPagePath } from './client'
+import { api } from './client'
 
 function respond(status, body) {
   return vi.fn(async () => new Response(body === undefined ? null : JSON.stringify(body), { status }))
@@ -46,12 +46,5 @@ describe('api', () => {
     }
     vi.stubGlobal('fetch', vi.fn(async () => { throw new TypeError('offline') }))
     await expect(api('/x/')).rejects.toMatchObject({ status: 0 })
-  })
-})
-
-describe('nextPagePath', () => {
-  test('keeps only the cursor from the next link', () => {
-    expect(nextPagePath('/admin/admins/', 'http://other-host/api/admin/admins/?cursor=cD0x')).toBe('/admin/admins/?cursor=cD0x')
-    expect(nextPagePath('/admin/admins/', null)).toBeNull()
   })
 })

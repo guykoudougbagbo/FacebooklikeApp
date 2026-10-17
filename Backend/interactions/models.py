@@ -77,6 +77,14 @@ class Follower(models.Model):
     created_at = models.DateTimeField(default=timezone.now)
 
 
+class MobilePushToken(models.Model):
+    """Where to send a follower's notifications in the phone app (an Expo push token)."""
+
+    follower = models.ForeignKey(Follower, on_delete=models.CASCADE, related_name="mobile_tokens")
+    token = models.CharField(max_length=200, unique=True)
+    created_at = models.DateTimeField(default=timezone.now)
+
+
 class PushSubscription(models.Model):
     """Where to send a follower's notifications, as given by their browser."""
 

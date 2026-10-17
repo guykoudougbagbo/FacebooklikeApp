@@ -1,4 +1,4 @@
-import { formatDuration } from '../utils/media'
+import { formatDuration } from '@shared/format'
 
 /** A feed video before it's played: its cover, a play button and its length. Nothing downloads until pressed. */
 export default function VideoTile({ item }) {

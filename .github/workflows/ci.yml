@@ -79,6 +79,13 @@ jobs:
       PUSH_BATCH_SIZE: "500"
       PUSH_ALLOWED_HOSTS: fcm.googleapis.com,push.services.mozilla.com,push.apple.com,notify.windows.com
       PUSH_PRUNE_APPLY: "false"
+      THROTTLE_APP_DEVICE_RATE: 20/h
+      EXPO_PUSH_URL: https://exp.host/--/api/v2/push/send
+      EXPO_PUSH_BATCH_SIZE: "100"
+      EXPO_PUSH_MAX_RETRIES: "5"
+      EXPO_RETRY_BASE_SECONDS: "5"
+      EXPO_RECEIPTS_URL: https://exp.host/--/api/v2/push/getReceipts
+      EXPO_RECEIPT_DELAY_SECONDS: "900"
       CHANNEL_REDIS_URL: redis://localhost:6379/2
       MESSAGE_MAX_LENGTH: "2000"
       GROUP_MAX_MEMBERS: "50"
@@ -130,6 +137,25 @@ jobs:
           node-version: "24.22.0"
           cache: npm
           cache-dependency-path: Frontend/package-lock.json
+      - run: npm ci
+      - run: npm run lint
+      - name: Lint the code shared with the phone app
+        working-directory: .
+        run: Frontend/node_modules/.bin/oxlint -c Frontend/.oxlintrc.json Shared
+      - run: npm test
+
+  mobile:
+    runs-on: ubuntu-24.04
+    defaults:
+      run:
+        working-directory: Mobile
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
+        with:
+          node-version: "24.22.0"
+          cache: npm
+          cache-dependency-path: Mobile/package-lock.json
       - run: npm ci
       - run: npm run lint
       - run: npm test

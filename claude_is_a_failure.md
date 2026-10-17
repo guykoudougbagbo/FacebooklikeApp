@@ -7,6 +7,7 @@
 - **Hook misjudged what counts as a user message** | count: 1 | entries: F-005 | hook: built (stop_preflight_check.py, fixed)
 - **Tests not isolated from local services** | count: 1 | entries: F-004 | hook: none
 - **Coded from memory instead of the source** | count: 3 | entries: F-002, F-003, F-007 | hook: not hookable (no script can tell whether behaviour was read before it was relied on; rule tightened in Conventions instead)
+- **Staged files in git without being asked** | count: 1 | entries: F-008 | hook: none
 
 ## Entries
 
@@ -79,3 +80,12 @@
 - **Fix:** Read `django/contrib/auth/apps.py` and `emit_post_migrate_signal`; the sync now runs once, after the last app, without creating permissions itself. Proved on a throwaway database migrated from the old version; removed the 4 unused obsolete permissions locally; added a test.
 - **Pattern:** Coded from memory instead of the source
 
+### F-008: Deleted website files with `git rm`, which staged the deletions
+
+- **Date:** 2026-10-16
+- **Section:** Guardrails
+- **Rule broken:** never stage, commit or push without the user asking.
+- **What happened:** While moving the website's date, reaction and media helpers into `Shared/` (step 7), I removed the old files with `git rm`, which also stages their deletion.
+- **How it was caught:** self-review, right after the command ran
+- **Fix:** Unstaged them with `git restore --staged` (the files stay deleted on disk); confirmed nothing is staged. Files are deleted with `rm` from now on.
+- **Pattern:** Staged files in git without being asked

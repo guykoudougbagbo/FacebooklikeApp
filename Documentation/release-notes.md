@@ -23,3 +23,11 @@
 - Admins can switch to **Voir comme un visiteur** to see the page exactly as visitors do, without logging out, and switch back from the bar at the top.
 - When the server is unreachable, the site now says "Le serveur ne répond pas. Réessayez dans un instant." instead of a vague error.
 - The whole site is in French and shows the GenZ logo in the header and as the page background, behind see-through content boxes.
+
+### Phone app (step 7)
+
+- New GenZ app for iPhone and Android, for visitors: the page's posts, photos and videos (a video plays only when pressed), the six reactions (press for "J'aime", hold to choose), comments, sharing through the phone's share menu, and following the page. Admins keep using the website.
+- Like on the website, visitors need no account. Each phone gets an anonymous key the first time it reacts, comments, shares or follows, so each phone counts once.
+- Followers get a notification on their phone for each new post; tapping it opens the post. This works once the app is built with an Expo account (not in the Expo Go test app).
+- Notifications to phones where the app was uninstalled are detected and, once switched on, cleaned up, as for browsers.
+- The app's icon and opening screen use the GenZ logo, in the same colors as the website.

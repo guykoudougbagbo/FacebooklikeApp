@@ -180,6 +180,13 @@ PUSH_BATCH_SIZE = require_int("PUSH_BATCH_SIZE")
 PUSH_ALLOWED_HOSTS = require_list("PUSH_ALLOWED_HOSTS")
 # Off until a person has read the log: removing subscriptions that push services report as gone.
 PUSH_PRUNE_APPLY = require_bool("PUSH_PRUNE_APPLY")
+# Phone app notifications go through Expo's push service.
+EXPO_PUSH_URL = require_env("EXPO_PUSH_URL")
+EXPO_PUSH_BATCH_SIZE = require_int("EXPO_PUSH_BATCH_SIZE")
+EXPO_PUSH_MAX_RETRIES = require_int("EXPO_PUSH_MAX_RETRIES")
+EXPO_RETRY_BASE_SECONDS = require_int("EXPO_RETRY_BASE_SECONDS")
+EXPO_RECEIPTS_URL = require_env("EXPO_RECEIPTS_URL")
+EXPO_RECEIPT_DELAY_SECONDS = require_int("EXPO_RECEIPT_DELAY_SECONDS")
 
 
 # Private messages between admins
@@ -241,6 +248,7 @@ REST_FRAMEWORK = {
         'reaction': require_env("THROTTLE_REACTION_RATE"),
         'share': require_env("THROTTLE_SHARE_RATE"),
         'follow': require_env("THROTTLE_FOLLOW_RATE"),
+        'app_device': require_env("THROTTLE_APP_DEVICE_RATE"),
         'message': require_env("THROTTLE_MESSAGE_RATE"),
     },
 }

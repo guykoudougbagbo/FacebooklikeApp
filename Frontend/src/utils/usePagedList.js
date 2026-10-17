@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useState } from 'react'
-import { api, nextPagePath } from '../api/client'
+import { nextPagePath } from '@shared/api'
+import { api } from '../api/client'
 
 /** Loads a paginated API list, one page at a time. Changing `refreshKey` reloads it from the start. */
 export function usePagedList(basePath, refreshKey = 0) {

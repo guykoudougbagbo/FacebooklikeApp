@@ -60,6 +60,8 @@ Feed and post responses also carry `comments_enabled` and `interactions`: `react
 
 Visitors have no accounts. Their first interaction gives their browser an anonymous device cookie (`device`, HttpOnly); only its SHA-256 is stored. Visitor routes are public on purpose (reasons in `interactions/api.py`), check the CSRF token, and are limited per network address (comments also per device).
 
+The phone app gets its device key once from `app/device/`, keeps it in the phone's secure storage and sends it as the `X-Device-Key` header on every request (reads included, so `my_reaction` and `following` are right). Requests carrying that header skip the CSRF check, because other websites can't add custom headers to a request; requests without it are checked as before. An unknown key answers 401 (the app then gets a new one).
+
 | Method | Path | Who can call it | Notes |
 |--------|------|-----------------|-------|
 | POST | `posts/<id>/reaction/` | Public | Body `{"kind"}`: `like`, `love`, `haha`, `wow`, `sad`, `angry`. One per device; replaces the previous one. Returns the post's counts. |
@@ -68,8 +70,9 @@ Visitors have no accounts. Their first interaction gives their browser an anonym
 | POST | `posts/<id>/comments/` | Public | Body `{"name", "body", "website"}`; `website` must be empty. Refused when the post's comments are off. |
 | POST | `posts/<id>/share/` | Public | Counts one share per device. |
 | GET | `page/` | Public | `followers`, `following` (this device) and `push_public_key`. |
-| POST | `page/follow/` | Public | Body `{"subscription"}` from the browser's push subscription. Only endpoints on `PUSH_ALLOWED_HOSTS` are accepted. |
-| DELETE | `page/follow/` | Public | Stops following; removes this device's subscriptions. |
+| POST | `page/follow/` | Public | Browsers: body `{"subscription"}` from the browser's push subscription; only endpoints on `PUSH_ALLOWED_HOSTS` are accepted. Phone app: body `{"expo_token"}` (`ExponentPushToken[...]`). |
+| DELETE | `page/follow/` | Public | Stops following; removes this device's browser subscriptions and phone tokens. |
+| POST | `app/device/` | Public | Phone app only: returns a new anonymous `device_key` (shown once; only its SHA-256 is stored). Limited per network address (`THROTTLE_APP_DEVICE_RATE`). |
 | DELETE | `admin/comments/<id>/` | Owner and admins (`interactions.delete_any_comment`) | |
 | POST | `admin/posts/<id>/comments/` | Owner and admins (`interactions.reply_as_page`) | Body `{"body"}`; shown as written by "GenZ". |
 | PATCH | `admin/posts/<id>/comments-enabled/` | Owner and admins (`interactions.toggle_comments`) | Body `{"enabled": true/false}`. Existing comments stay. |

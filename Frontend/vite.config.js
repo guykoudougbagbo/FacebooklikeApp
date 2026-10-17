@@ -1,5 +1,9 @@
+import { fileURLToPath } from 'node:url'
 import react from '@vitejs/plugin-react'
-import { defineConfig, loadEnv } from 'vite'
+import { defineConfig, loadEnv, searchForWorkspaceRoot } from 'vite'
+
+// Logic shared with the phone app (Mobile/).
+const SHARED = fileURLToPath(new URL('../Shared', import.meta.url))
 
 /**
  * Sends /api, /media (uploaded files), /p/ (share-link previews) and /ws (live connections) to the backend. Keeps the browser's own address (changeOrigin: false):
@@ -20,10 +24,16 @@ export default defineConfig(({ command, mode }) => {
   }
   return {
     plugins: [react()],
-    // The site and the API share one address, so login cookies stay first-party.
-    server: serving ? { proxy: apiProxy(env.BACKEND_URL) } : undefined,
+    resolve: { alias: { '@shared': SHARED } },
+    server: {
+      // Shared/ sits outside this folder; the dev server and the tests must be allowed to read it.
+      fs: { allow: [searchForWorkspaceRoot(process.cwd()), SHARED] },
+      // The site and the API share one address, so login cookies stay first-party.
+      ...(serving ? { proxy: apiProxy(env.BACKEND_URL) } : {}),
+    },
     test: {
       environment: 'jsdom',
+      include: ['src/**/*.test.{js,jsx}', '../Shared/**/*.test.js'],
     },
   }
 })

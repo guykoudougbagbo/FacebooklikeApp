@@ -1,5 +1,5 @@
 import { Button, Card, ErrorMessage, Loading } from '../components/ui'
-import { formatDateTime } from '../utils/format'
+import { formatDateTime } from '@shared/format'
 import { usePagedList } from '../utils/usePagedList'
 
 const SENTENCES = {

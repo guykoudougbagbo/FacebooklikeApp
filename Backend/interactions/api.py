@@ -8,10 +8,12 @@ from rest_framework.response import Response
 from rest_framework.views import APIView
 
 from posts.models import PostMedia
-from utils.api import OldestFirstPagination, csrf_checked, has_permission
+from utils.api import OldestFirstPagination, has_permission
 from utils.interactions import activity, devices, follows
+from utils.interactions.devices import csrf_checked_for_browsers
 from utils.interactions.serializers import CommentSerializer
 from utils.interactions.throttles import (
+    AppDeviceThrottle,
     CommentDeviceThrottle,
     CommentIPThrottle,
     FollowThrottle,
@@ -29,7 +31,10 @@ def _error(message, code=status.HTTP_400_BAD_REQUEST):
 
 def _with_device(request, handler):
     """Runs handler(device) with the visitor's device, creating it (and its cookie) on first use."""
-    device, new_token = devices.current_or_new(request)
+    try:
+        device, new_token = devices.current_or_new(request)
+    except devices.UnknownDevice:
+        return _error("Appareil inconnu.", status.HTTP_401_UNAUTHORIZED)
     try:
         response = handler(device)
     except activity.NotFound:
@@ -46,7 +51,7 @@ def _summary(request, post_id):
 # --- Visitors --------------------------------------------------------------
 # Public: visitors interact without accounts; each route is limited per network address.
 
-@csrf_checked
+@csrf_checked_for_browsers
 class ReactionView(APIView):
     permission_classes = [AllowAny]
     throttle_classes = [ReactionThrottle]
@@ -64,7 +69,7 @@ class ReactionView(APIView):
         return _with_device(request, handler)
 
 
-@csrf_checked
+@csrf_checked_for_browsers
 class CommentListCreateView(generics.ListAPIView):
     permission_classes = [AllowAny]
     serializer_class = CommentSerializer
@@ -92,7 +97,7 @@ class CommentListCreateView(generics.ListAPIView):
         return _with_device(request, handler)
 
 
-@csrf_checked
+@csrf_checked_for_browsers
 class ShareView(APIView):
     permission_classes = [AllowAny]
     throttle_classes = [ShareThrottle]
@@ -113,14 +118,14 @@ class PageView(APIView):
         return Response({**info, "push_public_key": settings.VAPID_PUBLIC_KEY})
 
 
-@csrf_checked
+@csrf_checked_for_browsers
 class FollowView(APIView):
     permission_classes = [AllowAny]
     throttle_classes = [FollowThrottle]
 
     def post(self, request):
         def handler(device):
-            follows.follow(device, request.data.get("subscription"))
+            follows.follow(device, request.data.get("subscription"), request.data.get("expo_token"))
             return Response(follows.page_info(device))
         return _with_device(request, handler)
 
@@ -129,6 +134,17 @@ class FollowView(APIView):
             follows.unfollow(device)
             return Response(follows.page_info(device))
         return _with_device(request, handler)
+
+
+class AppDeviceView(APIView):
+    # Public: the phone app gets its anonymous device key here before any interaction. It needs no
+    # anti-forgery check: it only creates a random, empty device whose key only the caller can read.
+    permission_classes = [AllowAny]
+    throttle_classes = [AppDeviceThrottle]
+
+    def post(self, request):
+        _, key = devices.register()
+        return Response({"device_key": key}, status=status.HTTP_201_CREATED)
 
 
 # --- Admins ----------------------------------------------------------------

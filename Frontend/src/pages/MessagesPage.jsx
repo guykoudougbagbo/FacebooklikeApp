@@ -6,7 +6,7 @@ import { useMessagingEvents } from '../messaging/MessagingContext'
 import NewConversation from '../messaging/NewConversation'
 import { preview } from '../messaging/text'
 import Thread from '../messaging/Thread'
-import { formatRelative } from '../utils/format'
+import { formatRelative } from '@shared/format'
 import { usePagedList } from '../utils/usePagedList'
 import '../messaging/Messaging.css'
 

@@ -1,6 +1,7 @@
 import { useRef, useState } from 'react'
 import { api } from '../api/client'
-import { plural, REACTION_BY_KIND, REACTIONS, topReactions } from '../utils/reactions'
+import { plural } from '@shared/format'
+import { REACTION_BY_KIND, REACTIONS, topReactions } from '@shared/reactions'
 import Comments from './Comments'
 import { ErrorMessage } from './ui'
 import './Interactions.css'

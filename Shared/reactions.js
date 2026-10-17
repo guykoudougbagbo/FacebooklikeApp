@@ -17,7 +17,3 @@ export function topReactions(counts) {
   const top = entries.sort((a, b) => b[1] - a[1]).slice(0, 3).map(([kind]) => REACTION_BY_KIND[kind]).filter(Boolean)
   return { top, total }
 }
-
-export function plural(count, one, many) {
-  return `${count} ${count > 1 ? many : one}`
-}
