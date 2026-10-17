@@ -2,40 +2,25 @@
 
 import json
 import logging
-import re
 from urllib.parse import urlparse
 
 from django.conf import settings
 from django.db import transaction
-import requests
 from pywebpush import WebPushException, webpush
 
 from interactions.models import Follower, MobilePushToken, PushSubscription
 from posts.models import Post
+from utils import expo_push
 
 logger = logging.getLogger(__name__)
 
 # Push services answer 404 or 410 when the browser has unsubscribed for good.
 GONE = {404, 410}
 EXCERPT_LENGTH = 120
-EXPO_TOKEN = re.compile(r"Expo(nent)?PushToken\[[A-Za-z0-9_-]+\]")
-EXPO_HEADERS = {"Accept": "application/json", "Accept-Encoding": "gzip, deflate"}
 
 
 class FollowError(Exception):
     """Raised with a message that is safe to show the visitor."""
-
-
-class PushServiceBusy(Exception):
-    """Expo was unreachable or answered 429 or 5xx: the job tries again later."""
-
-
-class PushRefused(Exception):
-    """Expo refused the whole request (4xx); retrying the same request won't help."""
-
-    def __init__(self, status_code):
-        super().__init__(status_code)
-        self.status_code = status_code
 
 
 def page_info(device):
@@ -132,21 +117,17 @@ def send_app_notifications(post_id, after_id=0):
     batch = list(MobilePushToken.objects.filter(id__gt=after_id).order_by("id")[: settings.EXPO_PUSH_BATCH_SIZE])
     if not batch:
         return {"sent": 0, "gone": 0}
-    messages = [
-        {"to": t.token, "title": "GenZ", "body": _excerpt(post.body), "data": {"url": f"/publication/{post.id}"},
-         "sound": "default", "ttl": settings.PUSH_TTL_SECONDS}
-        for t in batch
-    ]
+    body, url = _excerpt(post.body), f"/publication/{post.id}"
     sent, gone, receipts = 0, [], {}
     # Tickets come back in the order the messages were sent.
-    for token, ticket in zip(batch, _send_expo(messages)):
+    for token, ticket in zip(batch, expo_push.send([expo_push.message(t.token, body, url) for t in batch])):
         if ticket.get("status") == "ok":
             sent += 1
             receipts[ticket["id"]] = token.id
-        elif _expo_error(ticket) == "DeviceNotRegistered":
+        elif expo_push.gone(ticket):
             gone.append(token.id)
         else:
-            logger.warning("App push to token %s failed: %s", token.id, _expo_error(ticket))
+            logger.warning("App push to token %s failed: %s", token.id, expo_push.error_code(ticket))
     if gone:
         _prune_app(gone)
     if receipts:
@@ -158,48 +139,17 @@ def send_app_notifications(post_id, after_id=0):
 
 def check_app_receipts(receipts):
     """Phones that uninstalled the app are only reported later, in Expo's receipts. receipts maps ticket id -> token id."""
-    data = _expo_request(settings.EXPO_RECEIPTS_URL, {"ids": list(receipts)})["data"]
     gone = []
-    for ticket_id, receipt in data.items():
+    for ticket_id, receipt in expo_push.receipts(receipts).items():
         if receipt.get("status") != "error" or ticket_id not in receipts:
             continue
-        if _expo_error(receipt) == "DeviceNotRegistered":
+        if expo_push.gone(receipt):
             gone.append(receipts[ticket_id])
         else:
-            logger.warning("App push to token %s failed: %s", receipts[ticket_id], _expo_error(receipt))
+            logger.warning("App push to token %s failed: %s", receipts[ticket_id], expo_push.error_code(receipt))
     if gone:
         _prune_app(gone)
     return {"gone": len(gone)}
-
-
-def _send_expo(messages):
-    """One ticket per message. A batch Expo refuses as a whole is split in two, so one bad token can't block the rest."""
-    try:
-        return _expo_request(settings.EXPO_PUSH_URL, messages)["data"]
-    except PushRefused as exc:
-        if exc.status_code != 400:
-            raise
-        if len(messages) == 1:
-            return [{"status": "error", "details": {"error": "Refused"}}]
-    half = len(messages) // 2
-    return _send_expo(messages[:half]) + _send_expo(messages[half:])
-
-
-def _expo_request(url, body):
-    try:
-        response = requests.post(url, json=body, headers=EXPO_HEADERS, timeout=settings.PUSH_TIMEOUT_SECONDS)
-    except requests.RequestException as exc:
-        raise PushServiceBusy(type(exc).__name__) from exc
-    if response.status_code == 429 or response.status_code >= 500:
-        raise PushServiceBusy(response.status_code)
-    if response.status_code != 200:
-        logger.warning("Expo refused a request (%s): %s", response.status_code, response.text[:500])
-        raise PushRefused(response.status_code)
-    return response.json()
-
-
-def _expo_error(ticket):
-    return (ticket.get("details") or {}).get("error") or ticket.get("message")
 
 
 def _prune_app(token_ids):
@@ -247,6 +197,6 @@ def _checked(subscription):
 
 
 def _checked_expo_token(token):
-    if not isinstance(token, str) or len(token) > 200 or not EXPO_TOKEN.fullmatch(token):
+    if not expo_push.is_token(token):
         raise FollowError("Ce téléphone n'est pas pris en charge pour les notifications.")
     return token

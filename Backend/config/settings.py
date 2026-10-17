@@ -111,6 +111,10 @@ SESSION_COOKIE_AGE = require_int("SESSION_COOKIE_AGE_SECONDS")
 # Accounts and login
 
 LOGIN_PENDING_TTL_SECONDS = require_int("LOGIN_PENDING_TTL_SECONDS")
+# Phone app logins end after this long without being used; last use is saved at most once per APP_LOGIN_TOUCH_SECONDS.
+APP_LOGIN_IDLE_SECONDS = require_int("APP_LOGIN_IDLE_SECONDS")
+APP_LOGIN_TOUCH_SECONDS = require_int("APP_LOGIN_TOUCH_SECONDS")
+APP_LOGIN_PRUNE_APPLY = require_bool("APP_LOGIN_PRUNE_APPLY")
 ADMIN_INVITE_TTL_HOURS = require_int("ADMIN_INVITE_TTL_HOURS")
 RECOVERY_CODE_COUNT = require_int("RECOVERY_CODE_COUNT")
 OTP_TOTP_ISSUER = require_env("APP_NAME")
@@ -209,6 +213,10 @@ CELERY_BEAT_SCHEDULE = {
         'task': 'posts.tasks.repair_stuck_media',
         'schedule': require_int("POST_REPAIR_INTERVAL_SECONDS"),
     },
+    'prune-app-logins': {
+        'task': 'accounts.tasks.prune_app_logins',
+        'schedule': require_int("APP_LOGIN_PRUNE_INTERVAL_SECONDS"),
+    },
 }
 
 
@@ -233,7 +241,12 @@ AUTH_PASSWORD_VALIDATORS = [
 # API
 
 REST_FRAMEWORK = {
-    'DEFAULT_AUTHENTICATION_CLASSES': ['rest_framework.authentication.SessionAuthentication'],
+    # The website uses its session cookie; the phone app sends its login key in a header. The session check
+    # stays first: DRF takes the logged-out answer (403) from the first check in this list.
+    'DEFAULT_AUTHENTICATION_CLASSES': [
+        'rest_framework.authentication.SessionAuthentication',
+        'utils.accounts.app_auth.AppLoginAuthentication',
+    ],
     # Every route needs a logged-in user unless its view opts out with a documented reason.
     'DEFAULT_PERMISSION_CLASSES': ['rest_framework.permissions.IsAuthenticated'],
     'DEFAULT_PAGINATION_CLASS': 'utils.api.NewestFirstPagination',

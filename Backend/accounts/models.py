@@ -113,3 +113,20 @@ class AdminActivity(models.Model):
     )
     invite = models.ForeignKey(AdminInvite, null=True, blank=True, on_delete=models.PROTECT, related_name="+")
     created_at = models.DateTimeField(default=timezone.now)
+
+
+class AppLogin(models.Model):
+    """An admin logged in on the phone app. The app holds a random key; only its SHA-256 is stored."""
+
+    user = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name="+")
+    key_hash = models.CharField(max_length=64, unique=True)
+    # The user's session code at login time. Logging out everywhere or a new password changes it, which ends this login.
+    auth_hash = models.CharField(max_length=64)
+    created_at = models.DateTimeField(default=timezone.now)
+    last_used_at = models.DateTimeField(default=timezone.now)
+    # Where to send this phone's message notifications (an Expo push token).
+    push_token = models.CharField(max_length=200, unique=True, null=True, blank=True)
+
+    class Meta:
+        indexes = [models.Index(fields=["last_used_at"], name="accounts_applogin_used_idx")]
+

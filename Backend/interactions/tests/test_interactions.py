@@ -12,6 +12,7 @@ from interactions.models import Comment, Device, Follower, MobilePushToken, Push
 from interactions.tasks import send_app_notifications
 from posts.models import Post
 from posts.tests.helpers import PostsTestCase, as_items, make_photo
+from utils import expo_push
 from utils.interactions import follows
 from utils.interactions.devices import hash_secret
 from utils.interactions.throttles import AppDeviceThrottle, CommentDeviceThrottle
@@ -20,7 +21,7 @@ from utils.posts import posts
 NOTIFY = "interactions.tasks.send_post_notifications.delay"
 APP_NOTIFY = "interactions.tasks.send_app_notifications.delay"
 RECEIPTS = "interactions.tasks.check_app_receipts.apply_async"
-EXPO = "utils.interactions.follows.requests.post"
+EXPO = "utils.expo_push.requests.post"
 APP_TOKEN = "ExponentPushToken[abcDEF123_-]"
 SUBSCRIPTION = {"endpoint": "https://fcm.googleapis.com/fcm/send/abc", "keys": {"p256dh": "key", "auth": "auth"}}
 
@@ -350,7 +351,7 @@ class AppNotificationTest(InteractionsTestCase):
             return ok_tickets(url, json)
 
         with mock.patch(EXPO, side_effect=expo), mock.patch(RECEIPTS) as receipts, \
-                self.assertLogs("utils.interactions.follows", "WARNING") as logs:
+                self.assertLogs("utils", "WARNING") as logs:
             self.assertEqual(follows.send_app_notifications(self.post.id), {"sent": 2, "gone": 0})
         self.assertEqual(set(receipts.call_args.args[0][0]), {"ticket-ExponentPushToken[a]", "ticket-ExponentPushToken[c]"})
         self.assertTrue(any("Refused" in line for line in logs.output))
@@ -359,7 +360,7 @@ class AppNotificationTest(InteractionsTestCase):
         self.follow("ExponentPushToken[a]")
         self.follow("ExponentPushToken[b]")
         with mock.patch(EXPO, return_value=expo_answer(status=401)) as expo, \
-                self.assertLogs("utils.interactions.follows", "WARNING"), self.assertRaises(follows.PushRefused):
+                self.assertLogs("utils.expo_push", "WARNING"), self.assertRaises(expo_push.PushRefused):
             follows.send_app_notifications(self.post.id)
         self.assertEqual(expo.call_count, 1)
 
@@ -374,6 +375,6 @@ class AppNotificationTest(InteractionsTestCase):
                 mock.patch(EXPO, return_value=busy) as expo, \
                 mock.patch.object(send_app_notifications, "retry", wraps=send_app_notifications.retry) as retry:
             result = send_app_notifications.apply(args=(self.post.id, 0))
-        self.assertIsInstance(result.result, follows.PushServiceBusy)
+        self.assertIsInstance(result.result, expo_push.PushServiceBusy)
         self.assertEqual(expo.call_count, 3)
         self.assertEqual([c.kwargs["countdown"] for c in retry.call_args_list], [5, 10, 20])

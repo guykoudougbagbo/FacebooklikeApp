@@ -7,7 +7,7 @@ import { formatDateTime, formatRelative } from '@shared/format'
 import { usePagedList } from '../utils/usePagedList'
 import GroupSettings from './GroupSettings'
 import { useMessagingEvents } from './MessagingContext'
-import { describeEvent, seenLabel } from './text'
+import { describeEvent, seenLabel } from '@shared/messages'
 
 function Composer({ conversationId, onSent }) {
   const [body, setBody] = useState('')

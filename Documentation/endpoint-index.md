@@ -18,6 +18,20 @@ All paths start with `/api/`. Routes are defined in `Backend/<app>/urls.py` and 
 | POST | `auth/logout/` | Logged-in admin | |
 | GET | `auth/me/` | Logged-in admin | Name, email and role (`owner` or `admin`). |
 
+## Phone app login (admins)
+
+The app has no cookies. Its password step answers with a signed `ticket` (valid `LOGIN_PENDING_TTL_SECONDS`, tied to the admin's logout counter) instead of a session; the code step turns it into a login `key`, shown once and stored by the app in secure storage (only its SHA-256 is kept). Every admin route in this index also accepts `Authorization: Bearer <key>` instead of the session cookie; header requests need no CSRF token. A key stops working when the admin logs out on that phone, is logged out everywhere (removal, authenticator reset, new password), or doesn't use the app for `APP_LOGIN_IDLE_SECONDS`; it then answers 401 (logged-out website requests still get 403). These routes set and read no cookies, so they need no CSRF check; same limits as the website login.
+
+| Method | Path | Who can call it | Notes |
+|--------|------|-----------------|-------|
+| POST | `app/auth/login/` | Public | Body `{"email", "password"}`. Answers `{"next": "verify" or "setup", "ticket"}`. Limited per IP and per email. |
+| POST | `app/auth/verify/` | Public (holder of a ticket) | Body `{"ticket", "code"}` (app code or recovery code). Answers `{"key", "user"}`. Limited per account. |
+| POST | `app/auth/setup/` | Public (holder of a ticket, no authenticator yet) | Body `{"ticket"}`. Answers `{"otpauth_url", "secret"}`. |
+| POST | `app/auth/confirm/` | Same as setup | Body `{"ticket", "code"}`. Answers `{"key", "recovery_codes", "user"}`. |
+| POST | `app/auth/logout/` | Logged-in admin (app key) | Ends this phone's login only. |
+| PUT | `app/auth/push-token/` | Logged-in admin (app key) | Body `{"expo_token"}`: where to send this phone's message notifications. A token moves to whoever logged in on that phone last. |
+| DELETE | `app/auth/push-token/` | Logged-in admin (app key) | Stops message notifications on this phone. |
+
 ## Joining from an invite
 
 | Method | Path | Who can call it | Notes |
@@ -103,5 +117,5 @@ Every route needs `messaging.use_messaging` (owner and admins) **and** membershi
 
 ### Live connection
 
-`ws(s)://<site>/ws/messages/` — a WebSocket for logged-in admins (session cookie, same-site Origin). It only receives events: `message`, `message_deleted`, `read`, `removed`. Closes with 4403 when the person may not connect, and 4401 when their session ended (removed, logged out everywhere) at the next event.
+`ws(s)://<site>/ws/messages/` — a WebSocket for logged-in admins: the website's session cookie, or the phone app's `Authorization: Bearer <key>` header. Either way its `Origin` must be one of `DJANGO_ALLOWED_HOSTS` (the app sends the server's own address). It only receives events: `message`, `message_deleted`, `read`, `removed`. Closes with 4403 when the person may not connect, and 4401 at the next event once their session or app login has ended (removed, logged out everywhere, logged out on that phone).
 

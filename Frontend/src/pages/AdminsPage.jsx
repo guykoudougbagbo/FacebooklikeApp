@@ -3,12 +3,12 @@ import { api } from '../api/client'
 import { useAuth } from '../auth/AuthContext'
 import { Button, Card, ErrorMessage, Loading, Notice } from '../components/ui'
 import { formatDate, formatDateTime } from '@shared/format'
-import { ROLE_LABELS } from '../utils/roles'
+import { inviteUrl, ROLE_LABELS } from '@shared/team'
 import { usePagedList } from '../utils/usePagedList'
 import './AdminsPage.css'
 
 function linkFrom(invite, extra = {}) {
-  return { url: `${window.location.origin}/invitation#${invite.token}`, expiresAt: invite.expires_at, ...extra }
+  return { url: inviteUrl(window.location.origin, invite.token), expiresAt: invite.expires_at, ...extra }
 }
 
 function InviteLink({ link }) {

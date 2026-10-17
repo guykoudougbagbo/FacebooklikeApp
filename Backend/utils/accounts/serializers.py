@@ -13,6 +13,18 @@ class CodeSerializer(serializers.Serializer):
     code = serializers.CharField(max_length=32)
 
 
+class TicketSerializer(serializers.Serializer):
+    ticket = serializers.CharField(max_length=500)
+
+
+class TicketCodeSerializer(TicketSerializer):
+    code = serializers.CharField(max_length=32)
+
+
+class PushTokenSerializer(serializers.Serializer):
+    expo_token = serializers.CharField(max_length=200)
+
+
 class InviteTokenSerializer(serializers.Serializer):
     token = serializers.CharField(max_length=128)
 

@@ -40,6 +40,12 @@ export default () => {
       'expo-image',
       ['expo-splash-screen', { image: './assets/splash-icon.png', imageWidth: 220, backgroundColor: '#000000' }],
       ['expo-notifications', { icon: './assets/notification-icon.png', color: '#7a1fd1', defaultChannel: 'default' }],
+      // Admins pick photos and videos from the library; the app never uses the camera or microphone.
+      ['expo-image-picker', {
+        photosPermission: 'GenZ ouvre vos photos et vidéos seulement pour les publications que vous choisissez.',
+        cameraPermission: false,
+        microphonePermission: false,
+      }],
     ],
     extra: {
       apiUrl: required('API_URL'),

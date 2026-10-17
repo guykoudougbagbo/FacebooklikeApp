@@ -4,13 +4,18 @@ import { router, Stack } from 'expo-router'
 import { StatusBar } from 'expo-status-bar'
 import { useEffect } from 'react'
 import { StyleSheet, Text, View } from 'react-native'
-import { notificationTarget } from '../notifications/push'
+import { AdminProvider } from '../admin/AdminProvider'
+import AdminButton from '../components/admin/AdminButton'
+import { notificationTarget, shouldShow } from '../notifications/push'
 
 const LOGO = require('../../assets/genz-logo.jpg')
 
-// New posts show as banners even while the app is open.
+// Notifications show as banners even while the app is open, except for the conversation already on screen.
 Notifications.setNotificationHandler({
-  handleNotification: async () => ({ shouldShowBanner: true, shouldShowList: true, shouldPlaySound: true, shouldSetBadge: false }),
+  handleNotification: async (notification) => {
+    const show = shouldShow(notification)
+    return { shouldShowBanner: show, shouldShowList: show, shouldPlaySound: show, shouldSetBadge: false }
+  },
 })
 
 function Brand() {
@@ -22,8 +27,8 @@ function Brand() {
   )
 }
 
-export default function RootLayout() {
-  // A tapped notification opens its post, whether the app was closed or in the background.
+function Navigation() {
+  // A tapped notification opens its post or conversation, whether the app was closed or in the background.
   const response = Notifications.useLastNotificationResponse()
   useEffect(() => {
     const target = notificationTarget(response)
@@ -41,10 +46,19 @@ export default function RootLayout() {
           headerBackButtonDisplayMode: 'minimal',
         }}
       >
-        <Stack.Screen name="index" options={{ headerTitle: () => <Brand /> }} />
+        <Stack.Screen name="index" options={{ headerTitle: () => <Brand />, headerRight: () => <AdminButton /> }} />
         <Stack.Screen name="publication/[id]" options={{ title: 'Publication' }} />
+        <Stack.Screen name="admin" options={{ headerShown: false }} />
       </Stack>
     </>
+  )
+}
+
+export default function RootLayout() {
+  return (
+    <AdminProvider>
+      <Navigation />
+    </AdminProvider>
   )
 }
 

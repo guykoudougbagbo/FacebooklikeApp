@@ -12,11 +12,12 @@ from django.db import connection
 from django.test import TransactionTestCase, override_settings
 from django.test.utils import CaptureQueriesContext
 
+from accounts.models import AppLogin
 from accounts.tests.helpers import LOCMEM_CACHE, PASSWORD, AccountsTestCase, SecureAPIClient
 from messaging.api import MessageThrottle
 from messaging.models import Conversation, Membership, Message
-from utils.accounts import admins, sessions
-from utils.messaging import conversations
+from utils.accounts import admins, app_logins, sessions
+from utils.messaging import conversations, notifications
 
 IN_MEMORY = {"default": {"BACKEND": "channels.layers.InMemoryChannelLayer"}}
 
@@ -33,10 +34,15 @@ async def _drain(layer, channel):
 CONVERSATIONS = "/api/messages/conversations/"
 
 
+NOTIFY_PHONES = "messaging.tasks.send_message_notifications.delay"
+
+
 @override_settings(CHANNEL_LAYERS=IN_MEMORY)
 class MessagingTestCase(AccountsTestCase):
     def setUp(self):
         super().setUp()
+        # Never queue real notification jobs into the developer's Redis; tests that check it patch this again.
+        self.enterContext(mock.patch(NOTIFY_PHONES))
         self.owner = self.make_owner()
         self.awa = self.make_admin("awa@example.com")
         self.koffi = self.make_admin("koffi@example.com")
@@ -261,6 +267,8 @@ class ConversationListTest(MessagingTestCase):
                    PASSWORD_HASHERS=["django.contrib.auth.hashers.MD5PasswordHasher"])
 class LiveConnectionTest(TransactionTestCase):
     def setUp(self):
+        self.enterContext(mock.patch(NOTIFY_PHONES))
+
         def admin(email):
             user = get_user_model().objects.create_user(email, email.split("@")[0], PASSWORD)
             user.groups.add(Group.objects.get(name="admin"))
@@ -313,3 +321,91 @@ class LiveConnectionTest(TransactionTestCase):
         await database_sync_to_async(self.send)(self.awa, cid, "Tu ne le verras pas")
         closed = await communicator.receive_output()
         self.assertEqual((closed["type"], closed.get("code")), ("websocket.close", 4401))
+
+    async def app_connect(self, key, origin=b"http://localhost"):
+        from config.asgi import application
+
+        headers = [(b"origin", origin), (b"authorization", f"Bearer {key}".encode())]
+        communicator = WebsocketCommunicator(application, "/ws/messages/", headers=headers)
+        connected, code = await communicator.connect()
+        return communicator, connected, code
+
+    async def test_the_app_connects_with_its_login_key_until_that_login_ends(self):
+        cid = await database_sync_to_async(self.direct)(self.awa, self.koffi)
+        key = await database_sync_to_async(app_logins.create)(self.koffi)
+        communicator, connected, _ = await self.app_connect(key)
+        self.assertTrue(connected)
+        await database_sync_to_async(self.send)(self.awa, cid, "Sur le téléphone")
+        self.assertEqual((await communicator.receive_json_from())["message"]["body"], "Sur le téléphone")
+        await database_sync_to_async(lambda: AppLogin.objects.filter(user=self.koffi).delete())()
+        await database_sync_to_async(self.send)(self.awa, cid, "Plus maintenant")
+        closed = await communicator.receive_output()
+        self.assertEqual((closed["type"], closed.get("code")), ("websocket.close", 4401))
+
+    async def test_a_wrong_app_key_is_refused(self):
+        communicator, connected, code = await self.app_connect("nope")
+        self.assertEqual((connected, code), (False, 4403))
+
+
+EXPO = "utils.expo_push.requests.post"
+TOKENS = {"koffi": "ExponentPushToken[koffi]", "outsider": "ExponentPushToken[outsider]", "awa": "ExponentPushToken[awa]"}
+
+
+def expo_ok(url, json, **kwargs):
+    return mock.Mock(status_code=200, text="", json=mock.Mock(return_value={
+        "data": [{"status": "ok", "id": f"ticket-{m['to']}"} for m in json]}))
+
+
+class MessageNotificationTest(MessagingTestCase):
+    def phone(self, user, name):
+        key = app_logins.create(user)
+        app_logins.set_push_token(app_logins.find(key), TOKENS[name])
+        return key
+
+    def test_sending_a_message_queues_its_notification_after_saving(self):
+        cid = conversations.start_direct(self.awa, self.koffi.pk)
+        with mock.patch(NOTIFY_PHONES) as notify, self.captureOnCommitCallbacks(execute=True):
+            message = conversations.send_message(cid, self.awa, "Bonjour")
+        notify.assert_called_once_with(message.id)
+
+    def test_other_members_phones_hear_who_wrote_but_not_what(self):
+        cid = conversations.create_group(self.awa, "Équipe", [self.koffi.pk, self.outsider.pk])
+        self.phone(self.awa, "awa")
+        self.phone(self.koffi, "koffi")
+        self.phone(self.outsider, "outsider")
+        admins.remove_admin(self.outsider.pk, self.owner)
+        message = conversations.send_message(cid, self.awa, "Réunion secrète à 18 h")
+        with mock.patch(EXPO, side_effect=expo_ok) as expo, \
+                mock.patch("messaging.tasks.check_message_receipts.apply_async") as receipts:
+            self.assertEqual(notifications.send(message.id), {"sent": 1, "gone": 0})
+        sent = expo.call_args.kwargs["json"]
+        self.assertEqual([m["to"] for m in sent], [TOKENS["koffi"]])
+        self.assertEqual(sent[0]["body"], f"Nouveau message de {self.awa.display_name}")
+        self.assertEqual(sent[0]["data"], {"url": f"/admin/messages/{cid}"})
+        self.assertNotIn("secrète", str(sent))
+        receipts.assert_called_once()
+
+    def test_phones_that_logged_out_hear_nothing(self):
+        cid = conversations.start_direct(self.awa, self.koffi.pk)
+        key = self.phone(self.koffi, "koffi")
+        app_logins.end(app_logins.find(key))
+        message = conversations.send_message(cid, self.awa, "Bonjour")
+        with mock.patch(EXPO) as expo:
+            self.assertEqual(notifications.send(message.id), {"sent": 0, "gone": 0})
+        expo.assert_not_called()
+
+    def test_uninstalled_apps_are_only_logged_until_pruning_is_switched_on(self):
+        cid = conversations.start_direct(self.awa, self.koffi.pk)
+        self.phone(self.koffi, "koffi")
+        message = conversations.send_message(cid, self.awa, "Bonjour")
+        gone = mock.Mock(status_code=200, text="", json=mock.Mock(return_value={
+            "data": [{"status": "error", "details": {"error": "DeviceNotRegistered"}}]}))
+        with mock.patch(EXPO, return_value=gone), self.assertLogs("utils.accounts.app_logins", "WARNING") as logs:
+            self.assertEqual(notifications.send(message.id)["gone"], 1)
+        self.assertIn("log-only", logs.output[0])
+        self.assertTrue(AppLogin.objects.filter(push_token=TOKENS["koffi"]).exists())
+        with override_settings(PUSH_PRUNE_APPLY=True), mock.patch(EXPO, return_value=gone), \
+                self.assertLogs("utils.accounts.app_logins", "WARNING"):
+            notifications.send(message.id)
+        self.assertFalse(AppLogin.objects.filter(push_token=TOKENS["koffi"]).exists())
+

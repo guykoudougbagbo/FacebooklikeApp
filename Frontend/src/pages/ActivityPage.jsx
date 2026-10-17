@@ -1,20 +1,7 @@
 import { Button, Card, ErrorMessage, Loading } from '../components/ui'
 import { formatDateTime } from '@shared/format'
+import { describeActivity } from '@shared/team'
 import { usePagedList } from '../utils/usePagedList'
-
-const SENTENCES = {
-  invite_created: (e) => `${e.actor} a créé un lien d'invitation.`,
-  invite_revoked: (e) => `${e.actor} a annulé un lien d'invitation.`,
-  admin_joined: (e) => `${e.actor} a rejoint l'équipe des administrateurs.`,
-  admin_removed: (e) => `${e.actor} a retiré ${e.target} des administrateurs.`,
-  two_factor_reset: (e) => `${e.actor} a réinitialisé la double authentification de ${e.target}.`,
-  admin_reinvited: (e) => `${e.actor} a réinvité ${e.target}.`,
-  admin_rejoined: (e) => `${e.actor} a rejoint à nouveau l'équipe des administrateurs.`,
-}
-
-function describe(entry) {
-  return SENTENCES[entry.action]?.(entry) ?? `${entry.actor} a effectué une action.`
-}
 
 export default function ActivityPage() {
   const activity = usePagedList('/admin/activity/')
@@ -28,7 +15,7 @@ export default function ActivityPage() {
         <ul className="list">
           {activity.items.map((entry) => (
             <li key={entry.id} className="list__row">
-              <span>{describe(entry)}</span>
+              <span>{describeActivity(entry)}</span>
               <time className="list__meta" dateTime={entry.created_at}>{formatDateTime(entry.created_at)}</time>
             </li>
           ))}

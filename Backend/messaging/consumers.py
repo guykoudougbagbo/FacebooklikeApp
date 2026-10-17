@@ -17,6 +17,7 @@ class MessagingConsumer(AsyncJsonWebsocketConsumer):
             await self.close(code=NOT_ALLOWED)
             return
         self.user_id, self.epoch = user.pk, user.session_epoch
+        self.app_login_id = self.scope.get("app_login_id")
         self.group = realtime.group_name(user.pk)
         await self.channel_layer.group_add(self.group, self.channel_name)
         await self.accept()
@@ -29,7 +30,7 @@ class MessagingConsumer(AsyncJsonWebsocketConsumer):
         pass
 
     async def deliver(self, message):
-        if not await database_sync_to_async(realtime.still_allowed)(self.user_id, self.epoch):
+        if not await database_sync_to_async(realtime.still_allowed)(self.user_id, self.epoch, self.app_login_id):
             await self.close(code=SESSION_ENDED)
             return
         await self.send_json(message["event"])

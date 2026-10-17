@@ -11,9 +11,13 @@ from channels.routing import ProtocolTypeRouter, URLRouter  # noqa: E402
 from channels.security.websocket import AllowedHostsOriginValidator  # noqa: E402
 
 from messaging.routing import websocket_urlpatterns  # noqa: E402
+from utils.accounts.app_auth import AppLoginWebsocketMiddleware  # noqa: E402
 
 application = ProtocolTypeRouter({
     "http": django_app,
-    # Live connections must come from this site's own pages and carry a logged-in session.
-    "websocket": AllowedHostsOriginValidator(AuthMiddlewareStack(URLRouter(websocket_urlpatterns))),
+    # Live connections must name this site as their origin and carry a logged-in session (website) or the
+    # app's login key (phone app).
+    "websocket": AllowedHostsOriginValidator(
+        AuthMiddlewareStack(AppLoginWebsocketMiddleware(URLRouter(websocket_urlpatterns)))
+    ),
 })

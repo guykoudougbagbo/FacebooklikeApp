@@ -7,7 +7,7 @@ from django.db.models import Max, Q
 from django.utils import timezone
 
 from messaging.models import Conversation, DirectPair, Membership, Message
-from utils.messaging import realtime
+from utils.messaging import notifications, realtime
 
 
 class MessagingError(Exception):
@@ -20,7 +20,7 @@ class NotFound(Exception):
 
 # --- Who can take part -----------------------------------------------------
 
-def _eligible(user_ids):
+def eligible(user_ids):
     """Active admins who may use messaging, from these ids."""
     users = get_user_model().objects.filter(pk__in=user_ids, is_active=True).prefetch_related("groups")
     return [u for u in users if u.has_perm("messaging.use_messaging")]
@@ -86,7 +86,7 @@ def messages_for(conversation_id, user):
 def start_direct(user, other_id):
     if other_id == user.pk:
         raise MessagingError("Choisissez une autre personne.")
-    if not _eligible([other_id]):
+    if not eligible([other_id]):
         raise MessagingError("Cette personne ne peut pas recevoir de messages.")
     low, high = sorted([user.pk, other_id])
     existing = DirectPair.objects.filter(user_low_id=low, user_high_id=high).first()
@@ -106,7 +106,7 @@ def start_direct(user, other_id):
 
 def create_group(user, title, member_ids_):
     title = _clean_title(title)
-    others = [u for u in _eligible(set(member_ids_) - {user.pk})]
+    others = [u for u in eligible(set(member_ids_) - {user.pk})]
     if not others:
         raise MessagingError("Ajoutez au moins une autre personne.")
     if len(others) + 1 > settings.GROUP_MAX_MEMBERS:
@@ -135,7 +135,7 @@ def add_member(conversation_id, user, new_id):
         conversation = _managed_group(conversation_id, user)
         if Membership.objects.filter(conversation=conversation, user_id=new_id).exists():
             raise MessagingError("Cette personne fait déjà partie du groupe.")
-        new = _eligible([new_id])
+        new = eligible([new_id])
         if not new:
             raise MessagingError("Cette personne ne peut pas recevoir de messages.")
         if Membership.objects.filter(conversation=conversation).count() >= settings.GROUP_MAX_MEMBERS:
@@ -220,6 +220,7 @@ def send_message(conversation_id, user, body):
         membership.last_read_message = message
         membership.save(update_fields=["last_read_message"])
         _announce(message)
+        notifications.announce(message)
     return message
 
 

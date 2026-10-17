@@ -5,7 +5,8 @@ from rest_framework.permissions import AllowAny, IsAuthenticated
 from rest_framework.response import Response
 from rest_framework.views import APIView
 
-from utils.accounts import admins, invites, sessions, two_factor
+from accounts.models import AppLogin
+from utils.accounts import admins, app_logins, invites, sessions, two_factor
 from utils.accounts.activity import recent_activity
 from utils.accounts.serializers import (
     AcceptInviteSerializer,
@@ -18,9 +19,18 @@ from utils.accounts.serializers import (
     InviteTokenSerializer,
     LoginSerializer,
     MeSerializer,
+    PushTokenSerializer,
     ReactivateSerializer,
+    TicketCodeSerializer,
+    TicketSerializer,
 )
-from utils.accounts.throttles import InviteThrottle, LoginAccountThrottle, LoginIPThrottle, SecondStepThrottle
+from utils.accounts.throttles import (
+    AppSecondStepThrottle,
+    InviteThrottle,
+    LoginAccountThrottle,
+    LoginIPThrottle,
+    SecondStepThrottle,
+)
 from utils.api import NewestFirstPagination, OldestFirstPagination, csrf_checked, has_permission
 
 WRONG_LOGIN = "Adresse e-mail ou mot de passe incorrect."
@@ -127,6 +137,106 @@ class MeView(APIView):
 
     def get(self, request):
         return Response(MeSerializer(request.user).data)
+
+
+# --- Phone app login -------------------------------------------------------
+# Same two steps and limits as the website. These routes set and read no cookies, so they need no CSRF check:
+# their answers only go back to the app that asked.
+
+class AppLoginView(APIView):
+    # Public: this is how a logged-out admin starts logging in from the app.
+    permission_classes = [AllowAny]
+    throttle_classes = [LoginIPThrottle, LoginAccountThrottle]
+
+    def post(self, request):
+        data = LoginSerializer(data=request.data)
+        data.is_valid(raise_exception=True)
+        started = app_logins.start(data.validated_data["email"], data.validated_data["password"])
+        if started is None:
+            return _error(WRONG_LOGIN)
+        next_step, ticket = started
+        return Response({"next": next_step, "ticket": ticket})
+
+
+def _pending_from(request, serializer_class):
+    data = serializer_class(data=request.data)
+    data.is_valid(raise_exception=True)
+    return app_logins.pending_user(data.validated_data["ticket"]), data.validated_data
+
+
+class AppVerifyView(APIView):
+    # Public: only works with a ticket from the password step.
+    permission_classes = [AllowAny]
+    throttle_classes = [AppSecondStepThrottle]
+
+    def post(self, request):
+        user, data = _pending_from(request, TicketCodeSerializer)
+        if user is None:
+            return _error(SESSION_EXPIRED, status.HTTP_401_UNAUTHORIZED)
+        if not two_factor.verify(user, data["code"]):
+            return _error(WRONG_CODE)
+        return Response({"key": app_logins.create(user), "user": MeSerializer(user).data})
+
+
+class AppSetupView(APIView):
+    # Public: only works with a ticket from the password step, for an admin with no authenticator app yet.
+    permission_classes = [AllowAny]
+    throttle_classes = [AppSecondStepThrottle]
+
+    def post(self, request):
+        user, _ = _pending_from(request, TicketSerializer)
+        if user is None:
+            return _error(SESSION_EXPIRED, status.HTTP_401_UNAUTHORIZED)
+        if two_factor.has_confirmed_device(user):
+            return _error("La double authentification est déjà configurée.")
+        otpauth_url, secret = two_factor.start_setup(user)
+        return Response({"otpauth_url": otpauth_url, "secret": secret})
+
+
+class AppConfirmView(APIView):
+    # Public: only works with a ticket from the password step, for an admin with no authenticator app yet.
+    permission_classes = [AllowAny]
+    throttle_classes = [AppSecondStepThrottle]
+
+    def post(self, request):
+        user, data = _pending_from(request, TicketCodeSerializer)
+        if user is None:
+            return _error(SESSION_EXPIRED, status.HTTP_401_UNAUTHORIZED)
+        if two_factor.has_confirmed_device(user):
+            return _error("La double authentification est déjà configurée.")
+        codes = two_factor.confirm_setup(user, data["code"])
+        if codes is None:
+            return _error(WRONG_CODE)
+        return Response({"key": app_logins.create(user), "recovery_codes": codes, "user": MeSerializer(user).data})
+
+
+class AppLogoutView(APIView):
+    permission_classes = [IsAuthenticated]
+
+    def post(self, request):
+        if isinstance(request.auth, AppLogin):
+            app_logins.end(request.auth)
+        return Response(status=status.HTTP_204_NO_CONTENT)
+
+
+class AppPushTokenView(APIView):
+    permission_classes = [IsAuthenticated]
+
+    def put(self, request):
+        if not isinstance(request.auth, AppLogin):
+            return _error("Réservé à l'application.")
+        data = PushTokenSerializer(data=request.data)
+        data.is_valid(raise_exception=True)
+        try:
+            app_logins.set_push_token(request.auth, data.validated_data["expo_token"])
+        except app_logins.PushTokenError as exc:
+            return _error(str(exc))
+        return Response(status=status.HTTP_204_NO_CONTENT)
+
+    def delete(self, request):
+        if isinstance(request.auth, AppLogin):
+            app_logins.clear_push_token(request.auth)
+        return Response(status=status.HTTP_204_NO_CONTENT)
 
 
 # --- Joining from an invite ----------------------------------------------

@@ -9,7 +9,7 @@ import PostText from './PostText'
 
 const LOGO = require('../../assets/genz-logo.jpg')
 
-export default function PostCard({ post, onChange, onComment }) {
+export default function PostCard({ post, onChange, onComment, header = null, showInteractions = true }) {
   const theme = useTheme()
   return (
     <View style={[styles.card, { backgroundColor: theme.surface }]} accessibilityLabel="Publication de GenZ">
@@ -18,13 +18,14 @@ export default function PostCard({ post, onChange, onComment }) {
         <View>
           <Text style={[styles.author, { color: theme.textStrong }]}>GenZ</Text>
           <Text style={[styles.meta, { color: theme.text }]}>
-            {formatRelative(post.published_at)}{post.edited_at ? ' · modifiée' : ''}
+            {formatRelative(post.published_at ?? post.created_at)}{post.edited_at ? ' · modifiée' : ''}
           </Text>
         </View>
       </View>
+      {header}
       <PostText text={post.body} style={styles.body} />
       <MediaGrid items={readyItems(post.media)} />
-      <InteractionBar post={post} onChange={onChange} onComment={onComment} />
+      {showInteractions && <InteractionBar post={post} onChange={onChange} onComment={onComment} />}
     </View>
   )
 }

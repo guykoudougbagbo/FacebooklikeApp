@@ -6,7 +6,7 @@
 - **New required setting not added to CI** | count: 1 | entries: F-006 | hook: built (test `utils.tests.CiSettingsTest` fails when a required setting is missing from CI)
 - **Hook misjudged what counts as a user message** | count: 1 | entries: F-005 | hook: built (stop_preflight_check.py, fixed)
 - **Tests not isolated from local services** | count: 1 | entries: F-004 | hook: none
-- **Coded from memory instead of the source** | count: 3 | entries: F-002, F-003, F-007 | hook: not hookable (no script can tell whether behaviour was read before it was relied on; rule tightened in Conventions instead)
+- **Coded from memory instead of the source** | count: 4 | entries: F-002, F-003, F-007, F-011 | hook: not hookable (no script can tell whether behaviour was read before it was relied on; rule tightened in Conventions instead)
 - **Staged files in git without being asked** | count: 1 | entries: F-008 | hook: none
 - **Test raced the code it checks** | count: 1 | entries: F-009 | hook: none
 - **Picked the newest version without checking it runs where it's needed** | count: 1 | entries: F-010 | hook: none
@@ -111,3 +111,14 @@
 - **How it was caught:** user report (screenshot of the error; App Store had no update)
 - **Fix:** At the user's choice, moved the app to SDK 57 (expo 57.0.30, versions from Expo's own list for that SDK, pinned exactly), checked every API the app uses against the SDK 57 docs, and reran tests, lint and both bundles. Before choosing a version from now on, check that it runs where the user will run it.
 - **Pattern:** Picked the newest version without checking it runs where it's needed
+
+### F-011: App login check put first changed the website's logged-out answer from 403 to 401
+
+- **Date:** 2026-10-17
+- **Section:** Conventions
+- **Rule broken:** "Before relying on how a library, framework or tool behaves (defaults, shorthands, headers, what it overwrites), read that behaviour in the installed version's source or docs."
+- **What happened:** In step 8 I added the phone app's `Authorization: Bearer` login check at the top of DRF's authentication list without reading how DRF picks the status for a logged-out request. DRF takes it from the first check in the list, so every logged-out website request to an admin route would have answered 401 instead of 403.
+- **How it was caught:** failed tests (messaging privacy test expected 403)
+- **Fix:** Read `rest_framework/views.py` (`handle_exception`) and `request.py` (`_authenticate`). The session check is first again; an ended app login raises its own 401 error (`LoginEnded`), so the website keeps 403 and the app can still tell "log in again" from "not allowed". Checked both answers against the running server.
+- **Pattern:** Coded from memory instead of the source
+

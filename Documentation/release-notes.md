@@ -31,3 +31,11 @@
 - Followers get a notification on their phone for each new post; tapping it opens the post. This works once the app is built with an Expo account (not in the Expo Go test app).
 - Notifications to phones where the app was uninstalled are detected and, once switched on, cleaned up, as for browsers.
 - The app's icon and opening screen use the GenZ logo, in the same colors as the website.
+
+### Admin side in the phone app (step 8)
+
+- Admins can do everything from the app that they do on the website: publish text, photos and videos (with the same sound options), edit and delete posts, moderate comments (delete, reply as "GenZ", turn comments off), private messages (one-on-one and groups, live, with "Vu"), and for the owner, invite, remove and re-invite admins and reset their authenticator. The team list and activity log are there too.
+- The admin side is hidden: visitors see nothing of it. Admins open a special link that only they know, then log in with their password and authenticator code. Once logged in on a phone, an "Admin" button appears there until they log out.
+- The phone stays logged in until the admin logs out, and ends by itself after 14 days without opening the app. Removing an admin or resetting their authenticator logs them out of the app at once, as on the website.
+- Admins get a notification for each new private message ("Nouveau message de …", without the message itself); tapping it opens the conversation. This works once the app is built with an Expo account.
+- Accepting an invitation still happens on the website, where the link opens.
