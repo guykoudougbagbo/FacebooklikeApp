@@ -1,11 +1,3 @@
-/** Silent autoplay is skipped for people who asked for less motion or less data use. */
-export function canAutoplay() {
-  if (typeof IntersectionObserver === 'undefined') return false
-  if (window.matchMedia?.('(prefers-reduced-motion: reduce)').matches) return false
-  if (navigator.connection?.saveData) return false
-  return true
-}
-
 /** 42 -> "0:42", 125 -> "2:05" */
 export function formatDuration(seconds) {
   const total = Math.round(seconds ?? 0)

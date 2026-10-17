@@ -1,6 +1,7 @@
 import { useEffect, useRef } from 'react'
 import { api } from '../api/client'
 import { useAuth } from '../auth/AuthContext'
+import FollowCard from '../components/FollowCard'
 import PostCard from '../components/PostCard'
 import PostComposer from '../components/PostComposer'
 import { Button, Card, ErrorMessage, Loading } from '../components/ui'
@@ -52,6 +53,7 @@ function Feed({ admin }) {
 
   return (
     <div className="feed">
+      <FollowCard />
       {admin && (
         <section className="post" aria-label="Nouvelle publication">
           <PostComposer onSaved={feed.prependItem} />

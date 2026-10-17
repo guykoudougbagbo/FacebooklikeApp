@@ -74,7 +74,7 @@ class CiSettingsTest(SimpleTestCase):
     """Regression for F-006: a new required setting reached GitHub without being added to CI."""
 
     # Set by a CI step at run time instead of in the job's env block.
-    SET_BY_CI_STEP = {"DJANGO_SECRET_KEY"}
+    SET_BY_CI_STEP = {"DJANGO_SECRET_KEY", "VAPID_PRIVATE_KEY", "VAPID_PUBLIC_KEY"}
 
     def test_every_required_setting_is_set_in_ci(self):
         example = (settings.BASE_DIR / ".env.example").read_text()

@@ -60,6 +60,14 @@ Without the worker, posts with photos or videos stay at "Publication en cours…
 - The repair job (`posts.tasks.repair_stuck_media`, every `POST_REPAIR_INTERVAL_SECONDS`) retries photos and videos stuck longer than `POST_PROCESSING_TIMEOUT_SECONDS` and gives up after `POST_PROCESSING_MAX_ATTEMPTS`. It starts in log-only mode: with `POST_REPAIR_APPLY=false` it only writes what it would do to the worker log. Read that log, then set it to `true`.
 - Production must also limit request size at the web server (for example nginx `client_max_body_size`), since Django checks each photo only after it has arrived.
 
+### Visitor interactions and notifications
+
+- Logic lives in `Backend/utils/interactions/`: `devices.py` (anonymous device cookie), `activity.py` (reactions, comments, shares, counts), `follows.py` (following and Web Push), `serializers.py` (counts added to feeds in a fixed number of queries).
+- When a post first becomes visible (text-only at once; with media after processing), the worker sends a notification to every follower in batches of `PUSH_BATCH_SIZE`. Push services answering 404/410 mark a subscription as gone; with `PUSH_PRUNE_APPLY=false` that's only logged.
+- Web Push keys: generate once (see the CI workflow for a snippet), keep `VAPID_PRIVATE_KEY` secret. Changing them unsubscribes every follower.
+- Notifications need HTTPS in production (browsers allow `http://localhost` for testing). On iPhone they only work once the site is added to the home screen; `Frontend/public/manifest.webmanifest`, the icons in `Frontend/public/icons/` and `Frontend/public/sw.js` make the site installable.
+- After adding new background jobs, restart the worker: it doesn't reload code by itself, and an old worker rejects jobs it doesn't know (`KeyError` in its log).
+
 ### Creating the page owner
 
 The owner can only be created from the server, once:

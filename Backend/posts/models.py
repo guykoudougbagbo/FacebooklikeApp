@@ -18,6 +18,7 @@ class Post(models.Model):
     created_at = models.DateTimeField(default=timezone.now)
     published_at = models.DateTimeField(null=True, blank=True)
     edited_at = models.DateTimeField(null=True, blank=True)
+    comments_enabled = models.BooleanField(default=True)
 
     class Meta:
         indexes = [

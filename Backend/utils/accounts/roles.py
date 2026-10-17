@@ -13,6 +13,9 @@ ADMIN_PERMISSIONS = [
     "posts.edit_own_post",
     "posts.delete_own_post",
     "posts.view_post_details",
+    "interactions.delete_any_comment",
+    "interactions.reply_as_page",
+    "interactions.toggle_comments",
 ]
 
 OWNER_ONLY_PERMISSIONS = [

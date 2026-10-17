@@ -3,6 +3,7 @@ import { api } from '../api/client'
 import logo from '../assets/brand/genz-logo.jpg'
 import { formatDateTime, formatRelative } from '../utils/format'
 import { readyItems } from '../utils/media'
+import InteractionBar from './InteractionBar'
 import MediaGrid from './MediaGrid'
 import PostComposer from './PostComposer'
 import PostText from './PostText'
@@ -26,7 +27,7 @@ function AdminStatus({ post }) {
   )
 }
 
-export default function PostCard({ post, admin = false, onChanged, onDeleted }) {
+export default function PostCard({ post, admin = false, onChanged, onDeleted, commentsOpen = false }) {
   const [editing, setEditing] = useState(false)
   const [error, setError] = useState('')
   const when = post.published_at ?? post.created_at
@@ -73,6 +74,10 @@ export default function PostCard({ post, admin = false, onChanged, onDeleted }) 
         <>
           <PostText text={post.body} />
           <MediaGrid items={readyItems(post.media)} />
+          {/* Visitors only ever receive published posts, which carry no status. */}
+          {(post.status ?? 'published') === 'published' && (
+            <InteractionBar key={post.id} post={post} admin={admin} startOpen={commentsOpen} />
+          )}
         </>
       )}
     </article>

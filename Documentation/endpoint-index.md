@@ -2,7 +2,7 @@
 
 Every backend route, who can call it, and where it's defined. Update this file in the same change that adds or removes a route.
 
-All paths start with `/api/`. Routes are defined in `Backend/<app>/urls.py` and `Backend/<app>/api.py` (apps: `accounts`, `posts`); their logic lives in `Backend/utils/<app>/`.
+All paths start with `/api/`. Routes are defined in `Backend/<app>/urls.py` and `Backend/<app>/api.py` (apps: `accounts`, `posts`, `interactions`); their logic lives in `Backend/utils/<app>/`.
 
 "Public" routes are open on purpose; each one's reason is written next to it in `accounts/api.py`. Public routes that change something still require the CSRF token.
 
@@ -45,6 +45,7 @@ All paths start with `/api/`. Routes are defined in `Backend/<app>/urls.py` and 
 | Method | Path | Who can call it | Notes |
 |--------|------|-----------------|-------|
 | GET | `posts/` | Public | The page's feed: published posts only, newest first, cursor-paginated. Shows the page as author (no admin names) and only photos and videos that are ready. Each `media` item has `kind` (`photo` or `video`); photos give `feed_url`/`full_url`, videos give `video_url`/`poster_url`/`duration_seconds`. |
+| GET | `posts/<id>/` | Public | One published post (its own page, where shared links and notifications lead). |
 | GET | `admin/posts/` | Owner and admins (`posts.view_post_details`) | Every post, any status, newest first, with author name, each media item's status and `can_edit` / `can_delete` for the caller. |
 | POST | `admin/posts/` | Owner and admins (`posts.create_post`) | Multipart: `body`; `media` (repeat, in display order; photos and videos mixed). For the video at position *i*: `sound_original_<i>` and `sound_music_<i>` (0-100) and an optional `music_<i>` audio file. Text-only posts publish at once; otherwise the post is `processing` until the worker has prepared every item. |
 | GET | `admin/posts/<id>/` | Owner and admins (`posts.view_post_details`) | One post, used to follow processing. |
@@ -52,4 +53,30 @@ All paths start with `/api/`. Routes are defined in `Backend/<app>/urls.py` and 
 | DELETE | `admin/posts/<id>/` | The post's author (`posts.delete_own_post`) or the owner (`posts.delete_any_post`) | Deletes the post and its photo and video files. |
 
 Photo and video files are served under `MEDIA_URL` (`/media/`). Uploads as received (and music files) are kept in private storage and deleted once processed.
+
+Feed and post responses also carry `comments_enabled` and `interactions`: `reactions` (count per kind), `comments`, `shares`, and `my_reaction` for the visitor's device.
+
+## Visitor interactions
+
+Visitors have no accounts. Their first interaction gives their browser an anonymous device cookie (`device`, HttpOnly); only its SHA-256 is stored. Visitor routes are public on purpose (reasons in `interactions/api.py`), check the CSRF token, and are limited per network address (comments also per device).
+
+| Method | Path | Who can call it | Notes |
+|--------|------|-----------------|-------|
+| POST | `posts/<id>/reaction/` | Public | Body `{"kind"}`: `like`, `love`, `haha`, `wow`, `sad`, `angry`. One per device; replaces the previous one. Returns the post's counts. |
+| DELETE | `posts/<id>/reaction/` | Public | Removes this device's reaction. |
+| GET | `posts/<id>/comments/` | Public | Oldest first, paginated. Each comment: `name`, `is_page`, `body`, `created_at`. Admin replies show as "GenZ". |
+| POST | `posts/<id>/comments/` | Public | Body `{"name", "body", "website"}`; `website` must be empty. Refused when the post's comments are off. |
+| POST | `posts/<id>/share/` | Public | Counts one share per device. |
+| GET | `page/` | Public | `followers`, `following` (this device) and `push_public_key`. |
+| POST | `page/follow/` | Public | Body `{"subscription"}` from the browser's push subscription. Only endpoints on `PUSH_ALLOWED_HOSTS` are accepted. |
+| DELETE | `page/follow/` | Public | Stops following; removes this device's subscriptions. |
+| DELETE | `admin/comments/<id>/` | Owner and admins (`interactions.delete_any_comment`) | |
+| POST | `admin/posts/<id>/comments/` | Owner and admins (`interactions.reply_as_page`) | Body `{"body"}`; shown as written by "GenZ". |
+| PATCH | `admin/posts/<id>/comments-enabled/` | Owner and admins (`interactions.toggle_comments`) | Body `{"enabled": true/false}`. Existing comments stay. |
+
+## Share previews
+
+| Method | Path | Who can call it | Notes |
+|--------|------|-----------------|-------|
+| GET | `/p/<id>/` (not under `/api/`) | Public | HTML with Open Graph tags (text, first photo or video cover) for WhatsApp/Facebook previews; sends people on to `/publication/<id>`. |
 

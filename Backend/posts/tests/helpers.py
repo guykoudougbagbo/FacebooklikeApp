@@ -72,6 +72,7 @@ class PostsTestCase(AccountsTestCase):
         super().setUp()
         # Tests that check queueing patch this again and inspect their own mock.
         self.enterContext(mock.patch("posts.tasks.process_post_media.delay"))
+        self.enterContext(mock.patch("interactions.tasks.send_post_notifications.delay"))
         root = Path(self.enterContext(tempfile.TemporaryDirectory()))
         self.public_dir, self.private_dir = root / "media", root / "private"
         self.enterContext(override_settings(STORAGES={

@@ -6,6 +6,7 @@ import AdminsPage from './pages/AdminsPage'
 import HomePage from './pages/HomePage'
 import InvitePage from './pages/InvitePage'
 import LoginPage from './pages/LoginPage'
+import PostPage from './pages/PostPage'
 import SetupPage from './pages/SetupPage'
 import VerifyPage from './pages/VerifyPage'
 
@@ -14,6 +15,7 @@ export const routes = [
     element: <Layout />,
     children: [
       { path: '/', element: <HomePage /> },
+      { path: '/publication/:postId', element: <PostPage /> },
       { path: '/connexion', element: <LoginPage /> },
       { path: '/connexion/code', element: <VerifyPage /> },
       { path: '/connexion/securite', element: <SetupPage /> },

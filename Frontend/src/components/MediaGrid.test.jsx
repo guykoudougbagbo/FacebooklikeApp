@@ -1,28 +1,12 @@
 import { cleanup, render, screen, within } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
-import { afterEach, beforeEach, expect, test, vi } from 'vitest'
+import { afterEach, expect, test, vi } from 'vitest'
 import { photo, video } from '../test/posts'
 import MediaGrid from './MediaGrid'
 
 afterEach(() => {
   cleanup()
   vi.unstubAllGlobals()
-})
-
-/** A fake IntersectionObserver the test can drive. */
-function fakeObserver() {
-  const observers = []
-  vi.stubGlobal('IntersectionObserver', class {
-    constructor(callback) { this.callback = callback; observers.push(this) }
-    observe(element) { this.element = element }
-    disconnect() {}
-  })
-  return (ratio) => observers.forEach((o) => o.callback([{ intersectionRatio: ratio, target: o.element }]))
-}
-
-beforeEach(() => {
-  window.HTMLMediaElement.prototype.play = vi.fn(() => Promise.resolve())
-  window.HTMLMediaElement.prototype.pause = vi.fn()
 })
 
 test('shows at most five tiles, with the rest counted on the last one', () => {
@@ -53,6 +37,8 @@ test('the full-screen viewer opens on the tapped item and moves with buttons and
   expect(player.getAttribute('src')).toBe('/media/posts/videos/2.mp4')
   expect(player.controls).toBe(true)
   expect(player.muted).toBe(false)
+  // Reached with the arrows, not by pressing its play button: it waits.
+  expect(player.autoplay).toBe(false)
   expect(within(viewer).getByText('2 / 3')).toBeTruthy()
   await user.keyboard('{ArrowLeft}')
   expect(within(viewer).getByText('1 / 3')).toBeTruthy()
@@ -60,34 +46,19 @@ test('the full-screen viewer opens on the tapped item and moves with buttons and
   expect(screen.queryByRole('dialog')).toBeNull()
 })
 
-test('feed videos play silently while half on screen and pause when scrolled away', () => {
-  window.matchMedia = vi.fn(() => ({ matches: false }))
-  const scroll = fakeObserver()
+test('feed videos never start by themselves: only the cover shows until play is pressed', () => {
   render(<MediaGrid items={[video(1)]} />)
-  const player = document.querySelector('video')
-  expect(player.muted).toBe(true)
-  expect(player.getAttribute('preload')).toBe('metadata')
-  scroll(0.6)
-  expect(player.play).toHaveBeenCalled()
-  scroll(0.2)
-  expect(player.pause).toHaveBeenCalled()
+  const tile = screen.getByRole('button', { name: 'Lire la vidéo 1 sur 1' })
+  expect(tile.querySelector('video')).toBeNull()
+  expect(tile.querySelector('img').getAttribute('src')).toBe('/media/posts/videos/1-poster.webp')
+  expect(within(tile).getByText('0:42')).toBeTruthy()
 })
 
-test('no autoplay for people who asked for less motion', () => {
-  window.matchMedia = vi.fn((query) => ({ matches: query.includes('reduce') }))
-  const scroll = fakeObserver()
+test('pressing play starts that video with sound and controls', async () => {
   render(<MediaGrid items={[video(1)]} />)
-  const player = document.querySelector('video')
-  expect(player.getAttribute('preload')).toBe('none')
-  scroll(1)
-  expect(player.play).not.toHaveBeenCalled()
-})
-
-test('no autoplay when the phone is saving data', () => {
-  window.matchMedia = vi.fn(() => ({ matches: false }))
-  vi.stubGlobal('navigator', { ...navigator, connection: { saveData: true } })
-  const scroll = fakeObserver()
-  render(<MediaGrid items={[video(1)]} />)
-  scroll(1)
-  expect(document.querySelector('video').play).not.toHaveBeenCalled()
+  await userEvent.setup().click(screen.getByRole('button', { name: 'Lire la vidéo 1 sur 1' }))
+  const player = screen.getByRole('dialog').querySelector('video')
+  expect(player.autoplay).toBe(true)
+  expect(player.muted).toBe(false)
+  expect(player.controls).toBe(true)
 })

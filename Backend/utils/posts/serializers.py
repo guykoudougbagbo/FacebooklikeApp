@@ -1,6 +1,7 @@
 from django.core.files.storage import default_storage
 from rest_framework import serializers
 
+from utils.interactions.serializers import InteractionsField
 from utils.posts.posts import can_delete, can_edit
 
 
@@ -44,6 +45,8 @@ class PublicPostSerializer(serializers.Serializer):
     published_at = serializers.DateTimeField()
     edited_at = serializers.DateTimeField()
     media = MediaSerializer(source="visible_media", many=True)
+    comments_enabled = serializers.BooleanField()
+    interactions = InteractionsField()
 
 
 class AdminPostSerializer(serializers.Serializer):
@@ -55,6 +58,8 @@ class AdminPostSerializer(serializers.Serializer):
     edited_at = serializers.DateTimeField()
     author = serializers.CharField(source="author.display_name")
     media = AdminMediaSerializer(source="visible_media", many=True)
+    comments_enabled = serializers.BooleanField()
+    interactions = InteractionsField()
     can_edit = serializers.SerializerMethodField()
     can_delete = serializers.SerializerMethodField()
 

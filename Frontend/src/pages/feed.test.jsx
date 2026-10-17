@@ -197,9 +197,8 @@ test('visitors see videos with a cover, length and play button', async () => {
   mockApi({ ...loggedOut, 'GET /posts/': page([publicPost(1, { media: [video(31)] })]) })
   renderApp('/')
   const tile = await screen.findByRole('button', { name: 'Lire la vidéo 1 sur 1' })
-  const player = tile.querySelector('video')
-  expect(player.getAttribute('poster')).toBe('/media/posts/videos/31-poster.webp')
-  expect(player.muted).toBe(true)
+  expect(tile.querySelector('img').getAttribute('src')).toBe('/media/posts/videos/31-poster.webp')
+  expect(tile.querySelector('video')).toBeNull()
   expect(within(tile).getByText('0:42')).toBeTruthy()
 })
 

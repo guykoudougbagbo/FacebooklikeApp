@@ -1,11 +1,18 @@
-import { useEffect, useRef, useState } from 'react'
+import { useCallback, useEffect, useRef, useState } from 'react'
 import './Post.css'
 
 export default function Lightbox({ items, startIndex, onClose }) {
   const [index, setIndex] = useState(startIndex)
+  // Only the video whose play button was pressed starts by itself; moving to another doesn't start it.
+  const [moved, setMoved] = useState(false)
   const closeButton = useRef(null)
   const count = items.length
   const item = items[index]
+
+  const go = useCallback((step) => {
+    setMoved(true)
+    setIndex((i) => (i + step + count) % count)
+  }, [count])
 
   useEffect(() => {
     const previousFocus = document.activeElement
@@ -21,12 +28,12 @@ export default function Lightbox({ items, startIndex, onClose }) {
   useEffect(() => {
     function onKey(event) {
       if (event.key === 'Escape') onClose()
-      if (event.key === 'ArrowRight') setIndex((i) => (i + 1) % count)
-      if (event.key === 'ArrowLeft') setIndex((i) => (i - 1 + count) % count)
+      if (event.key === 'ArrowRight') go(1)
+      if (event.key === 'ArrowLeft') go(-1)
     }
     document.addEventListener('keydown', onKey)
     return () => document.removeEventListener('keydown', onKey)
-  }, [count, onClose])
+  }, [go, onClose])
 
   return (
     <div className="lightbox" role="dialog" aria-modal="true" aria-label="Photo ou vidéo en grand" onClick={onClose}>
@@ -39,7 +46,7 @@ export default function Lightbox({ items, startIndex, onClose }) {
           width={item.width}
           height={item.height}
           controls
-          autoPlay
+          autoPlay={!moved}
           playsInline
           aria-label={`Vidéo ${index + 1} sur ${count}`}
           onClick={(e) => e.stopPropagation()}
@@ -61,13 +68,13 @@ export default function Lightbox({ items, startIndex, onClose }) {
             type="button"
             className="lightbox__button lightbox__prev"
             aria-label="Précédent"
-            onClick={(e) => { e.stopPropagation(); setIndex((i) => (i - 1 + count) % count) }}
+            onClick={(e) => { e.stopPropagation(); go(-1) }}
           >‹</button>
           <button
             type="button"
             className="lightbox__button lightbox__next"
             aria-label="Suivant"
-            onClick={(e) => { e.stopPropagation(); setIndex((i) => (i + 1) % count) }}
+            onClick={(e) => { e.stopPropagation(); go(1) }}
           >›</button>
           <p className="lightbox__counter">{index + 1} / {count}</p>
         </>

@@ -5,6 +5,7 @@ from rest_framework.response import Response
 from rest_framework.views import APIView
 
 from utils.api import NewestFirstPagination, has_permission
+from utils.interactions.serializers import WithSummaries
 from utils.posts import photos, posts, uploads, videos
 from utils.posts.serializers import AdminPostSerializer, PublicPostSerializer
 
@@ -24,7 +25,7 @@ def _error(message, code=status.HTTP_400_BAD_REQUEST):
 ADMIN_ERRORS = (posts.PostError, photos.PhotoError, videos.VideoError, uploads.UploadError)
 
 
-class PublicFeedView(generics.ListAPIView):
+class PublicFeedView(WithSummaries, generics.ListAPIView):
     # Public: visitors read the page without an account.
     permission_classes = [AllowAny]
     serializer_class = PublicPostSerializer
@@ -34,7 +35,18 @@ class PublicFeedView(generics.ListAPIView):
         return posts.public_feed()
 
 
-class AdminPostListView(generics.ListAPIView):
+class PublicPostView(APIView):
+    # Public: a post's own page, used for shared links.
+    permission_classes = [AllowAny]
+
+    def get(self, request, pk):
+        post = posts.public_feed().filter(pk=pk).first()
+        if post is None:
+            return _error(NOT_FOUND, status.HTTP_404_NOT_FOUND)
+        return Response(PublicPostSerializer(post, context={"request": request}).data)
+
+
+class AdminPostListView(WithSummaries, generics.ListAPIView):
     serializer_class = AdminPostSerializer
     pagination_class = NewestFirstPagination
 

@@ -34,6 +34,7 @@ INSTALLED_APPS = [
     # After django.contrib.auth, whose post-migrate step creates the permissions accounts relies on.
     'accounts',
     'posts',
+    'interactions',
 ]
 
 AUTH_USER_MODEL = 'accounts.User'
@@ -147,6 +148,28 @@ POST_REPAIR_BATCH_SIZE = require_int("POST_REPAIR_BATCH_SIZE")
 POST_REPAIR_APPLY = require_bool("POST_REPAIR_APPLY")
 
 
+# Visitor interactions
+
+# Public address of the site, used in share previews and notification links.
+SITE_URL = require_env("SITE_URL").rstrip("/")
+DEVICE_COOKIE_AGE_SECONDS = require_int("DEVICE_COOKIE_AGE_SECONDS")
+DEVICE_COOKIE_SECURE = not DEBUG
+COMMENT_MAX_LENGTH = require_int("COMMENT_MAX_LENGTH")
+COMMENT_NAME_MAX_LENGTH = require_int("COMMENT_NAME_MAX_LENGTH")
+
+# Web Push notifications (VAPID keys identify this site to browsers' push services).
+VAPID_PRIVATE_KEY = require_env("VAPID_PRIVATE_KEY")
+VAPID_PUBLIC_KEY = require_env("VAPID_PUBLIC_KEY")
+VAPID_SUBJECT = require_env("VAPID_SUBJECT")
+PUSH_TTL_SECONDS = require_int("PUSH_TTL_SECONDS")
+PUSH_TIMEOUT_SECONDS = require_int("PUSH_TIMEOUT_SECONDS")
+PUSH_BATCH_SIZE = require_int("PUSH_BATCH_SIZE")
+# Push services a browser subscription may point to (each also allows its subdomains).
+PUSH_ALLOWED_HOSTS = require_list("PUSH_ALLOWED_HOSTS")
+# Off until a person has read the log: removing subscriptions that push services report as gone.
+PUSH_PRUNE_APPLY = require_bool("PUSH_PRUNE_APPLY")
+
+
 # Background worker (Celery)
 
 CELERY_BROKER_URL = require_env("CELERY_BROKER_URL")
@@ -195,6 +218,11 @@ REST_FRAMEWORK = {
         'login_account': require_env("THROTTLE_LOGIN_ACCOUNT_RATE"),
         'second_step': require_env("THROTTLE_SECOND_STEP_RATE"),
         'invite': require_env("THROTTLE_INVITE_RATE"),
+        'comment_device': require_env("THROTTLE_COMMENT_DEVICE_RATE"),
+        'comment_ip': require_env("THROTTLE_COMMENT_IP_RATE"),
+        'reaction': require_env("THROTTLE_REACTION_RATE"),
+        'share': require_env("THROTTLE_SHARE_RATE"),
+        'follow': require_env("THROTTLE_FOLLOW_RATE"),
     },
 }
 

@@ -28,8 +28,13 @@ export function video(id, extra = {}) {
   }
 }
 
+export const noInteractions = () => ({ reactions: {}, comments: 0, shares: 0, my_reaction: null })
+
 export function publicPost(id, extra = {}) {
-  return { id, body: 'Bonjour à tous', published_at: minutesAgo(5), edited_at: null, media: [], ...extra }
+  return {
+    id, body: 'Bonjour à tous', published_at: minutesAgo(5), edited_at: null, media: [],
+    comments_enabled: true, interactions: noInteractions(), ...extra,
+  }
 }
 
 export function adminPost(id, extra = {}) {

@@ -7,3 +7,7 @@
   text-align: center;
   margin: 8px 0 24px;
 }
+
+.feed__more a {
+  color: #fff;
+}

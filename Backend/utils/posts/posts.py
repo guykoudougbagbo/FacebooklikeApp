@@ -70,6 +70,8 @@ def create_post(author, body, items):
         raise
     if saved:
         _enqueue_processing(post.id)
+    else:
+        _announce(post.id)
     return post
 
 
@@ -180,6 +182,13 @@ def _enqueue_processing(post_id):
     transaction.on_commit(lambda: process_post_media.delay(post_id))
 
 
+def _announce(post_id):
+    from utils.interactions.follows import announce
+
+    # Followers hear about a post once, when it first becomes visible.
+    announce(post_id)
+
+
 # --- Background processing -----------------------------------------------
 
 def process_post_media(post_id):
@@ -241,6 +250,8 @@ def finish_post(post_id):
         else:
             post.status = Post.Status.FAILED
         post.save(update_fields=["status", "published_at"])
+        if post.status == Post.Status.PUBLISHED:
+            _announce(post.id)
 
 
 def _mark_failed(media_id):

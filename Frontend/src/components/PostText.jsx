@@ -1,4 +1,4 @@
-// Only http(s) addresses become links, so text like "javascript:..." always stays plain text.
+// Turns web addresses in the text into links.
 const URL_PATTERN = /https?:\/\/[^\s<>"]+/g
 const TRAILING_PUNCTUATION = /[.,;:!?)\]»]+$/
 
@@ -15,8 +15,9 @@ function split(text) {
   return parts
 }
 
-export default function PostText({ text }) {
+export default function PostText({ text, plain = false }) {
   if (!text) return null
+  if (plain) return <p className="post__text">{text}</p>
   return (
     <p className="post__text">
       {split(text).map((part, i) =>
