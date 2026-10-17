@@ -39,3 +39,5 @@
 - The phone stays logged in until the admin logs out, and ends by itself after 14 days without opening the app. Removing an admin or resetting their authenticator logs them out of the app at once, as on the website.
 - Admins get a notification for each new private message ("Nouveau message de …", without the message itself); tapping it opens the conversation. This works once the app is built with an Expo account.
 - Accepting an invitation still happens on the website, where the link opens.
+- Videos now play on iPhones during development (the test server sends videos in pieces, as iPhones require).
+- Fixed: open message pages and the app's messages lost their live connection every few seconds while nothing was happening (they reconnected by themselves, but could miss the moment a message arrived).

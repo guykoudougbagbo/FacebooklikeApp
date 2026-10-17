@@ -9,7 +9,7 @@ from django.contrib.auth import get_user_model
 from django.contrib.auth.models import Group
 from django.core.cache import cache
 from django.db import connection
-from django.test import TransactionTestCase, override_settings
+from django.test import SimpleTestCase, TransactionTestCase, override_settings
 from django.test.utils import CaptureQueriesContext
 
 from accounts.models import AppLogin
@@ -408,4 +408,20 @@ class MessageNotificationTest(MessagingTestCase):
                 self.assertLogs("utils.accounts.app_logins", "WARNING"):
             notifications.send(message.id)
         self.assertFalse(AppLogin.objects.filter(push_token=TOKENS["koffi"]).exists())
+
+
+class RedisTimeoutCheckTest(SimpleTestCase):
+    def test_idle_live_connections_cannot_be_broken_by_a_short_read_timeout(self):
+        from utils.messaging.checks import socket_timeout_outlasts_waits
+
+        with override_settings(CHANNEL_REDIS_SOCKET_TIMEOUT_SECONDS=5):
+            self.assertEqual([e.id for e in socket_timeout_outlasts_waits(None)], ["messaging.E001"])
+        with override_settings(CHANNEL_REDIS_SOCKET_TIMEOUT_SECONDS=15):
+            self.assertEqual(socket_timeout_outlasts_waits(None), [])
+
+    def test_the_layer_gets_the_read_timeout(self):
+        from django.conf import settings
+
+        host = settings.CHANNEL_LAYERS["default"]["CONFIG"]["hosts"][0]
+        self.assertEqual(host["socket_timeout"], settings.CHANNEL_REDIS_SOCKET_TIMEOUT_SECONDS)
 

@@ -11,6 +11,10 @@ class MessagingConfig(AppConfig):
     name = 'messaging'
 
     def ready(self):
+        from django.core import checks
+
         from utils.accounts.signals import admin_removed
+        from utils.messaging.checks import socket_timeout_outlasts_waits
 
         admin_removed.connect(_leave_groups, dispatch_uid="messaging.leave_groups")
+        checks.register(socket_timeout_outlasts_waits)

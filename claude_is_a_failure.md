@@ -9,7 +9,7 @@
 - **Coded from memory instead of the source** | count: 4 | entries: F-002, F-003, F-007, F-011 | hook: not hookable (no script can tell whether behaviour was read before it was relied on; rule tightened in Conventions instead)
 - **Staged files in git without being asked** | count: 1 | entries: F-008 | hook: none
 - **Test raced the code it checks** | count: 1 | entries: F-009 | hook: none
-- **Picked the newest version without checking it runs where it's needed** | count: 1 | entries: F-010 | hook: none
+- **Picked the newest version without checking it runs where it's needed** | count: 2 | entries: F-010, F-012 | hook: not hookable (no script can tell whether a version's changed defaults fit the rest of the stack); rule tightened instead: when adding or pinning a new major version, read its changelog for changed defaults and check the libraries that use it, then prove it through the real service, not only test stand-ins
 
 ## Entries
 
@@ -121,4 +121,14 @@
 - **How it was caught:** failed tests (messaging privacy test expected 403)
 - **Fix:** Read `rest_framework/views.py` (`handle_exception`) and `request.py` (`_authenticate`). The session check is first again; an ended app login raises its own 401 error (`LoginEnded`), so the website keeps 403 and the app can still tell "log in again" from "not allowed". Checked both answers against the running server.
 - **Pattern:** Coded from memory instead of the source
+
+### F-012: Live connections broke every 5 seconds when idle (redis 8 read timeout vs channels_redis waits)
+
+- **Date:** 2026-10-17
+- **Section:** Conventions, Verification
+- **Rule broken:** "Before relying on how a library, framework or tool behaves (defaults, shorthands, headers, what it overwrites), read that behaviour in the installed version's source or docs." and "check through the real path, not only mocks."
+- **What happened:** In step 6 I pinned `redis==8.1.0`, the newest major version, without reading what it changed. Since version 8 it gives up reading after 5 seconds by default, while `channels_redis` waits up to 5 seconds for new events, so every idle live connection broke and reconnected about every 5 seconds. Tests use an in-memory channel layer and my step 6 live check received an event quickly, so neither caught it.
+- **How it was caught:** user report (the same Redis traceback twice in the server window)
+- **Fix:** Read `redis/_defaults.py` and `channels_redis/core.py`; reproduced 12 failures in 60 seconds of idle waiting against the real Redis, 0 with a 15-second read timeout. Added the required setting `CHANNEL_REDIS_SOCKET_TIMEOUT_SECONDS` and a start-up check (`messaging.E001`) that refuses a value not longer than the library's wait; checked an idle live connection on the running server stays open past 20 seconds.
+- **Pattern:** Picked the newest version without checking it runs where it's needed
 

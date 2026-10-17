@@ -70,11 +70,16 @@ TEMPLATES = [
 WSGI_APPLICATION = 'config.wsgi.application'
 ASGI_APPLICATION = 'config.asgi.application'
 
-# Live connections: events reach every server process through Redis.
+# Live connections: events reach every server process through Redis. The read timeout must outlast the layer's
+# 5-second waits for events (checked at start-up, messaging.E001).
+CHANNEL_REDIS_SOCKET_TIMEOUT_SECONDS = require_int("CHANNEL_REDIS_SOCKET_TIMEOUT_SECONDS")
 CHANNEL_LAYERS = {
     'default': {
         'BACKEND': 'channels_redis.core.RedisChannelLayer',
-        'CONFIG': {'hosts': [require_env("CHANNEL_REDIS_URL")]},
+        'CONFIG': {'hosts': [{
+            'address': require_env("CHANNEL_REDIS_URL"),
+            'socket_timeout': CHANNEL_REDIS_SOCKET_TIMEOUT_SECONDS,
+        }]},
     },
 }
 

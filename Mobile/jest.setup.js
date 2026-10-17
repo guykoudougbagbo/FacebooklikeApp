@@ -6,7 +6,7 @@ global.FormData = require('react-native/Libraries/Network/FormData').default
 
 jest.mock('./src/config', () => ({ API_URL: 'https://api.test', SITE_URL: 'https://genz.test', EAS_PROJECT_ID: 'project-1' }))
 jest.mock('expo-image', () => ({ Image: () => null }))
-jest.mock('expo-video', () => ({ useVideoPlayer: jest.fn(() => ({})), VideoView: () => null }))
+jest.mock('expo-video', () => ({ useVideoPlayer: jest.fn(() => ({})), VideoView: jest.fn(() => null) }))
 jest.mock('expo-secure-store', () => ({
   getItemAsync: jest.fn(async () => null),
   setItemAsync: jest.fn(async () => {}),

@@ -4,6 +4,7 @@ import { Pressable, StyleSheet, Text, View } from 'react-native'
 import { formatDuration } from '@shared/format'
 import { mediaUrl } from '../api/client'
 import MediaViewer from './MediaViewer'
+import PlayButton from './PlayButton'
 
 // Like Facebook: one item full width, then rows of two and three; "+N" on the last tile.
 const LAYOUTS = { 1: [[0]], 2: [[0, 1]], 3: [[0], [1, 2]], 4: [[0, 1], [2, 3]], 5: [[0, 1], [2, 3, 4]] }
@@ -25,10 +26,12 @@ function Tile({ item, index, count, more, onOpen }) {
       <Image source={{ uri: mediaUrl(video ? item.poster_url : item.feed_url) }} style={StyleSheet.absoluteFill}
         contentFit="cover" transition={150} />
       {video && (
-        <View style={styles.play} pointerEvents="none">
-          <Text style={styles.playIcon}>▶</Text>
+        <>
+          <View style={styles.play} pointerEvents="none">
+            <PlayButton />
+          </View>
           <Text style={styles.duration}>{formatDuration(item.duration_seconds)}</Text>
-        </View>
+        </>
       )}
       {more > 0 && (
         <View style={styles.more} pointerEvents="none">
@@ -63,8 +66,7 @@ const styles = StyleSheet.create({
   grid: { gap: 2 },
   row: { flexDirection: 'row', gap: 2, width: '100%' },
   tile: { flex: 1, backgroundColor: '#111', overflow: 'hidden' },
-  play: { ...StyleSheet.absoluteFillObject, alignItems: 'center', justifyContent: 'center', backgroundColor: 'rgba(0,0,0,0.25)' },
-  playIcon: { color: '#fff', fontSize: 40 },
+  play: { ...StyleSheet.absoluteFillObject, alignItems: 'center', justifyContent: 'center' },
   duration: { position: 'absolute', right: 8, bottom: 8, color: '#fff', fontSize: 13, fontWeight: '600' },
   more: { ...StyleSheet.absoluteFillObject, alignItems: 'center', justifyContent: 'center', backgroundColor: 'rgba(0,0,0,0.5)' },
   moreText: { color: '#fff', fontSize: 28, fontWeight: '700' },
