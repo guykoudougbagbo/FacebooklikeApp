@@ -23,7 +23,7 @@ PostgreSQL and Redis run in the background: `brew services list` shows them.
 ```
 cd Backend
 python3 -m venv .venv
-.venv/bin/pip install -r requirements.txt
+.venv/bin/pip install -r requirements-dev.txt   # requirements.txt plus development tools
 cp .env.example .env        # then fill in every value
 .venv/bin/python manage.py check
 .venv/bin/python manage.py migrate
@@ -31,12 +31,14 @@ cp .env.example .env        # then fill in every value
 .venv/bin/python manage.py runserver 8000
 ```
 
-In a second terminal, start the background worker (it also runs the scheduled repair job):
+In a second terminal, start the background worker (it also runs the scheduled repair job). In development, run it through `watchfiles`, which restarts it whenever a Python file changes, so it never runs old code:
 
 ```
 cd Backend
-.venv/bin/celery -A config worker -B --pool threads --concurrency 2 --loglevel info
+.venv/bin/watchfiles --filter python --ignore-paths .venv '.venv/bin/celery -A config worker -B --pool threads --concurrency 2 --loglevel info' .
 ```
+
+Servers run the plain `celery -A config worker ...` command and restart it on each deployment.
 
 `--pool threads` is for macOS: there, Celery 5.6's default process pool starts its helper processes with "spawn", which skips the worker's setup and makes every job fail with `not enough values to unpack` (celery/celery issue 9894). Linux servers keep the default process pool.
 
@@ -67,7 +69,7 @@ Without the worker, posts with photos or videos stay at "Publication en cours…
 - When a post first becomes visible (text-only at once; with media after processing), the worker sends a notification to every follower in batches of `PUSH_BATCH_SIZE`. Push services answering 404/410 mark a subscription as gone; with `PUSH_PRUNE_APPLY=false` that's only logged.
 - Web Push keys: generate once (see the CI workflow for a snippet), keep `VAPID_PRIVATE_KEY` secret. Changing them unsubscribes every follower.
 - Notifications need HTTPS in production (browsers allow `http://localhost` for testing). On iPhone they only work once the site is added to the home screen; `Frontend/public/manifest.webmanifest`, the icons in `Frontend/public/icons/` and `Frontend/public/sw.js` make the site installable.
-- After adding new background jobs, restart the worker: it doesn't reload code by itself, and an old worker rejects jobs it doesn't know (`KeyError` in its log).
+- Started without `watchfiles`, the worker doesn't reload code by itself: after adding background jobs, restart it, or an old worker rejects jobs it doesn't know (`KeyError` in its log).
 
 ### Private messages
 

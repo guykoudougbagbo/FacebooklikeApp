@@ -1,0 +1,3 @@
+-r requirements.txt
+# Development only: restarts the background worker when Python files change.
+watchfiles==1.3.0

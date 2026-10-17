@@ -79,3 +79,14 @@
   display: inline-block;
   text-align: center;
 }
+
+.site-header__visitor {
+  margin-left: auto;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  color: #fff;
+  font-size: 14px;
+}

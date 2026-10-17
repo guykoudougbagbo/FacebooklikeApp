@@ -2,6 +2,7 @@ import { cleanup, render } from '@testing-library/react'
 import { createMemoryRouter, RouterProvider } from 'react-router'
 import { afterEach, beforeEach, vi } from 'vitest'
 import { AuthProvider } from '../auth/AuthProvider'
+import { VisitorViewProvider } from '../auth/VisitorView'
 import { MessagingProvider } from '../messaging/MessagingProvider'
 import { routes } from '../routes'
 
@@ -49,9 +50,11 @@ export function renderApp(path) {
   const router = createMemoryRouter(routes, { initialEntries: [path] })
   render(
     <AuthProvider>
-      <MessagingProvider>
-        <RouterProvider router={router} />
-      </MessagingProvider>
+      <VisitorViewProvider>
+        <MessagingProvider>
+          <RouterProvider router={router} />
+        </MessagingProvider>
+      </VisitorViewProvider>
     </AuthProvider>,
   )
   return router

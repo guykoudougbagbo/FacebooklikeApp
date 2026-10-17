@@ -202,3 +202,27 @@ test('visitors see videos with a cover, length and play button', async () => {
   expect(within(tile).getByText('0:42')).toBeTruthy()
 })
 
+
+test('an admin can see the page as a visitor and come back', async () => {
+  const calls = mockApi({
+    ...loggedInAs(ADMIN),
+    'GET /admin/posts/': page([adminPost(1, { body: 'Ma publication' })]),
+    'GET /posts/': page([publicPost(1, { body: 'Ma publication' })]),
+  })
+  renderApp('/')
+  const user = userEvent.setup()
+  expect(await screen.findByLabelText('Texte de la publication')).toBeTruthy()
+
+  await user.click(screen.getByRole('button', { name: 'Voir comme un visiteur' }))
+  expect(await screen.findByText('Vous voyez la page comme un visiteur.')).toBeTruthy()
+  await screen.findByText('Ma publication')
+  expect(screen.queryByLabelText('Texte de la publication')).toBeNull()
+  expect(screen.queryByText(/Publié par/)).toBeNull()
+  expect(screen.queryByRole('button', { name: 'Modifier' })).toBeNull()
+  expect(screen.queryByRole('navigation', { name: 'Espace administrateur' })).toBeNull()
+  expect(calls.some((c) => c.path === '/posts/')).toBe(true)
+
+  await user.click(screen.getByRole('button', { name: "Revenir à l'espace administrateur" }))
+  expect(await screen.findByLabelText('Texte de la publication')).toBeTruthy()
+  expect(screen.getByRole('navigation', { name: 'Espace administrateur' })).toBeTruthy()
+})

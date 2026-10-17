@@ -1,6 +1,7 @@
 import { useEffect, useRef } from 'react'
 import { api } from '../api/client'
 import { useAuth } from '../auth/AuthContext'
+import { useVisitorView } from '../auth/VisitorViewContext'
 import FollowCard from '../components/FollowCard'
 import PostCard from '../components/PostCard'
 import PostComposer from '../components/PostComposer'
@@ -81,7 +82,9 @@ function Feed({ admin }) {
 
 export default function HomePage() {
   const { user } = useAuth()
+  const { visitorView } = useVisitorView()
   if (user === undefined) return <Loading />
-  // A new key when logging in or out, so the right feed loads from the start.
-  return <Feed key={user ? 'admin' : 'public'} admin={Boolean(user)} />
+  const admin = Boolean(user) && !visitorView
+  // A new key when switching between the admin and visitor views, so the right feed loads from the start.
+  return <Feed key={admin ? 'admin' : 'public'} admin={admin} />
 }
