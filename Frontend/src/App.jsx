@@ -1,5 +1,6 @@
 import { createBrowserRouter, RouterProvider } from 'react-router'
 import { AuthProvider } from './auth/AuthProvider'
+import { MessagingProvider } from './messaging/MessagingProvider'
 import { routes } from './routes'
 
 const router = createBrowserRouter(routes)
@@ -7,7 +8,9 @@ const router = createBrowserRouter(routes)
 function App() {
   return (
     <AuthProvider>
-      <RouterProvider router={router} />
+      <MessagingProvider>
+        <RouterProvider router={router} />
+      </MessagingProvider>
     </AuthProvider>
   )
 }

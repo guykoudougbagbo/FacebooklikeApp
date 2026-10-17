@@ -2,7 +2,7 @@
 
 Every backend route, who can call it, and where it's defined. Update this file in the same change that adds or removes a route.
 
-All paths start with `/api/`. Routes are defined in `Backend/<app>/urls.py` and `Backend/<app>/api.py` (apps: `accounts`, `posts`, `interactions`); their logic lives in `Backend/utils/<app>/`.
+All paths start with `/api/`. Routes are defined in `Backend/<app>/urls.py` and `Backend/<app>/api.py` (apps: `accounts`, `posts`, `interactions`, `messaging`); their logic lives in `Backend/utils/<app>/`.
 
 "Public" routes are open on purpose; each one's reason is written next to it in `accounts/api.py`. Public routes that change something still require the CSRF token.
 
@@ -79,4 +79,26 @@ Visitors have no accounts. Their first interaction gives their browser an anonym
 | Method | Path | Who can call it | Notes |
 |--------|------|-----------------|-------|
 | GET | `/p/<id>/` (not under `/api/`) | Public | HTML with Open Graph tags (text, first photo or video cover) for WhatsApp/Facebook previews; sends people on to `/publication/<id>`. |
+
+## Private messages (admins)
+
+Every route needs `messaging.use_messaging` (owner and admins) **and** membership of the conversation; a conversation someone isn't in answers 404, as if it didn't exist.
+
+| Method | Path | Who can call it | Notes |
+|--------|------|-----------------|-------|
+| GET | `messages/conversations/` | Members | My conversations, latest activity first, with `title`, `members`, `manager_id`, `read_state` (last read message per member), `last_message` and `unread`. |
+| POST | `messages/conversations/` | Admins | `{"kind": "direct", "user_id"}` (returns the existing one if any) or `{"kind": "group", "title", "member_ids"}` (at most `GROUP_MAX_MEMBERS`). |
+| GET | `messages/conversations/<id>/` | Members | One conversation. |
+| PATCH | `messages/conversations/<id>/` | The group's manager | `{"title"}`. |
+| POST | `messages/conversations/<id>/members/` | The group's manager | `{"user_id"}`. |
+| DELETE | `messages/conversations/<id>/members/<user_id>/` | The manager (anyone), or a member (themselves = leave) | Groups only. When the manager leaves, the longest-standing member takes over; the last one leaving deletes the group. |
+| GET | `messages/conversations/<id>/messages/` | Members | Newest first, paginated. Items: `kind` (`text`/`event`), `event`, `sender`, `target`, `body`, `deleted`. |
+| POST | `messages/conversations/<id>/messages/` | Members | `{"body"}`, at most `MESSAGE_MAX_LENGTH`; limited by `THROTTLE_MESSAGE_RATE`. |
+| POST | `messages/conversations/<id>/read/` | Members | `{"message_id"}`; only ever moves forward. |
+| DELETE | `messages/messages/<id>/` | The message's writer | Erases the text; shows "Message supprimé". |
+| GET | `messages/unread/` | Admins | `{"count"}` of conversations with unread messages. |
+
+### Live connection
+
+`ws(s)://<site>/ws/messages/` — a WebSocket for logged-in admins (session cookie, same-site Origin). It only receives events: `message`, `message_deleted`, `read`, `removed`. Closes with 4403 when the person may not connect, and 4401 when their session ended (removed, logged out everywhere) at the next event.
 

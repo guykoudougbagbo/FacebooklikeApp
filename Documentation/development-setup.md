@@ -14,6 +14,7 @@ Installed with Homebrew from `/opt/homebrew` (the Apple Silicon install, not the
 | Redis | 8 | Instant messaging and background jobs (later steps) |
 | FFmpeg | 9 | Converting videos and mixing their sound (the worker runs it) |
 | Celery | 5.6 | Background worker that prepares photos (Python package, uses Redis) |
+| Daphne / Channels | 4.2 / 4.3 | Serves live connections (private messages); `runserver` uses Daphne automatically |
 
 PostgreSQL and Redis run in the background: `brew services list` shows them.
 
@@ -67,6 +68,14 @@ Without the worker, posts with photos or videos stay at "Publication en cours…
 - Web Push keys: generate once (see the CI workflow for a snippet), keep `VAPID_PRIVATE_KEY` secret. Changing them unsubscribes every follower.
 - Notifications need HTTPS in production (browsers allow `http://localhost` for testing). On iPhone they only work once the site is added to the home screen; `Frontend/public/manifest.webmanifest`, the icons in `Frontend/public/icons/` and `Frontend/public/sw.js` make the site installable.
 - After adding new background jobs, restart the worker: it doesn't reload code by itself, and an old worker rejects jobs it doesn't know (`KeyError` in its log).
+
+### Private messages
+
+- Logic lives in `Backend/utils/messaging/` (`conversations.py`, `realtime.py`); the live connection is `Backend/messaging/consumers.py`, routed in `config/asgi.py`.
+- `runserver` serves normal pages and live connections together (Daphne is first in `INSTALLED_APPS`). Production needs an ASGI server (for example Daphne or Uvicorn) instead of a WSGI-only one, and the web server must pass WebSocket upgrades for `/ws/`.
+- Events go through Redis (`CHANNEL_REDIS_URL`), so every server process can reach every admin's open page.
+- Only members of a conversation can see it — the owner included. When an admin is removed from the team, they're taken out of every group (`utils.accounts.signals.admin_removed`), and open live connections close at the next event once their session has ended.
+- Messages are stored in PostgreSQL like everything else; they aren't end-to-end encrypted.
 
 ### Creating the page owner
 

@@ -16,6 +16,7 @@ ADMIN_PERMISSIONS = [
     "interactions.delete_any_comment",
     "interactions.reply_as_page",
     "interactions.toggle_comments",
+    "messaging.use_messaging",
 ]
 
 OWNER_ONLY_PERMISSIONS = [

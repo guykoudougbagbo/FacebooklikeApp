@@ -1,10 +1,12 @@
 import { Link, NavLink, useNavigate } from 'react-router'
 import logo from '../assets/brand/genz-logo.jpg'
 import { useAuth } from '../auth/AuthContext'
+import { useMessaging } from '../messaging/MessagingContext'
 import './Header.css'
 
 function Header() {
   const { user, logout } = useAuth()
+  const { unread } = useMessaging()
   const navigate = useNavigate()
 
   async function handleLogout() {
@@ -26,6 +28,9 @@ function Header() {
         <nav className="site-header__nav" aria-label="Espace administrateur">
           <NavLink to="/admin/administrateurs">Administrateurs</NavLink>
           <NavLink to="/admin/activite">Activité</NavLink>
+          <NavLink to="/admin/messages" aria-label={unread ? `Messages, ${unread} non lus` : 'Messages'}>
+            Messages{unread > 0 && <span className="site-header__badge" aria-hidden="true">{unread}</span>}
+          </NavLink>
           <span className="site-header__user">{user.display_name}</span>
           <button type="button" className="site-header__logout" onClick={handleLogout}>
             Se déconnecter

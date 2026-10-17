@@ -79,6 +79,10 @@ jobs:
       PUSH_BATCH_SIZE: "500"
       PUSH_ALLOWED_HOSTS: fcm.googleapis.com,push.services.mozilla.com,push.apple.com,notify.windows.com
       PUSH_PRUNE_APPLY: "false"
+      CHANNEL_REDIS_URL: redis://localhost:6379/2
+      MESSAGE_MAX_LENGTH: "2000"
+      GROUP_MAX_MEMBERS: "50"
+      THROTTLE_MESSAGE_RATE: 60/m
       CELERY_BROKER_URL: redis://localhost:6379/1
       POST_REPAIR_INTERVAL_SECONDS: "600"
       POST_PROCESSING_TIMEOUT_SECONDS: "900"

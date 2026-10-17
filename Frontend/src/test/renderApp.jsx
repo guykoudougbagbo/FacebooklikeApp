@@ -2,6 +2,7 @@ import { cleanup, render } from '@testing-library/react'
 import { createMemoryRouter, RouterProvider } from 'react-router'
 import { afterEach, beforeEach, vi } from 'vitest'
 import { AuthProvider } from '../auth/AuthProvider'
+import { MessagingProvider } from '../messaging/MessagingProvider'
 import { routes } from '../routes'
 
 export const OWNER = { id: 1, email: 'owner@example.com', display_name: 'Awa', role: 'owner' }
@@ -48,10 +49,47 @@ export function renderApp(path) {
   const router = createMemoryRouter(routes, { initialEntries: [path] })
   render(
     <AuthProvider>
-      <RouterProvider router={router} />
+      <MessagingProvider>
+        <RouterProvider router={router} />
+      </MessagingProvider>
     </AuthProvider>,
   )
   return router
+}
+
+/** Stand-in for the browser's WebSocket: tests open it, push server events and close it. */
+export class FakeSocket {
+  static instances = []
+
+  constructor(url) {
+    this.url = url
+    this.closed = false
+    FakeSocket.instances.push(this)
+  }
+
+  close() {
+    this.closed = true
+  }
+
+  /** Simulates the server accepting the connection. */
+  open() {
+    this.onopen?.()
+  }
+
+  /** Simulates the server sending a live event. */
+  push(event) {
+    this.onmessage?.({ data: JSON.stringify(event) })
+  }
+
+  /** Simulates the server closing the connection. */
+  serverClose(code) {
+    this.closed = true
+    this.onclose?.({ code })
+  }
+
+  static latest() {
+    return FakeSocket.instances.at(-1)
+  }
 }
 
 export function page(results, next = null) {
@@ -63,6 +101,8 @@ beforeEach(() => {
   // jsdom has no image previews; the composer only needs a URL string back.
   URL.createObjectURL = vi.fn((file) => `blob:${file.name}`)
   URL.revokeObjectURL = vi.fn()
+  FakeSocket.instances = []
+  vi.stubGlobal('WebSocket', FakeSocket)
 })
 
 afterEach(() => {

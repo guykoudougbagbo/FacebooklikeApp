@@ -9,6 +9,7 @@ urlpatterns = [
     path("api/", include("accounts.urls")),
     path("api/", include("posts.urls")),
     path("api/", include("interactions.urls")),
+    path("api/", include("messaging.urls")),
     path("p/<int:pk>/", share_preview),
 ]
 

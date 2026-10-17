@@ -5,6 +5,7 @@ from django.db import transaction
 from accounts.models import AdminActivity
 from utils.accounts import activity, sessions, two_factor
 from utils.accounts.roles import ADMIN, OWNER, owner_exists
+from utils.accounts.signals import admin_removed
 
 
 class AdminError(Exception):
@@ -39,6 +40,7 @@ def remove_admin(target_id, acting_user):
         target.save(update_fields=["is_active"])
         sessions.end_all_sessions(target)
         activity.record(acting_user, AdminActivity.Action.ADMIN_REMOVED, target_user=target)
+        transaction.on_commit(lambda: admin_removed.send(sender=None, removed_user=target, acting_user=acting_user))
 
 
 def reset_two_factor(target_id, acting_user):

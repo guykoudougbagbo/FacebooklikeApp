@@ -24,6 +24,8 @@ ALLOWED_HOSTS = require_list("DJANGO_ALLOWED_HOSTS")
 # Application definition
 
 INSTALLED_APPS = [
+    # First, so `runserver` serves live connections (WebSockets) as well as normal pages.
+    'daphne',
     'django.contrib.auth',
     'django.contrib.contenttypes',
     'django.contrib.sessions',
@@ -35,6 +37,7 @@ INSTALLED_APPS = [
     'accounts',
     'posts',
     'interactions',
+    'messaging',
 ]
 
 AUTH_USER_MODEL = 'accounts.User'
@@ -65,6 +68,15 @@ TEMPLATES = [
 ]
 
 WSGI_APPLICATION = 'config.wsgi.application'
+ASGI_APPLICATION = 'config.asgi.application'
+
+# Live connections: events reach every server process through Redis.
+CHANNEL_LAYERS = {
+    'default': {
+        'BACKEND': 'channels_redis.core.RedisChannelLayer',
+        'CONFIG': {'hosts': [require_env("CHANNEL_REDIS_URL")]},
+    },
+}
 
 
 # Database
@@ -170,6 +182,12 @@ PUSH_ALLOWED_HOSTS = require_list("PUSH_ALLOWED_HOSTS")
 PUSH_PRUNE_APPLY = require_bool("PUSH_PRUNE_APPLY")
 
 
+# Private messages between admins
+
+MESSAGE_MAX_LENGTH = require_int("MESSAGE_MAX_LENGTH")
+GROUP_MAX_MEMBERS = require_int("GROUP_MAX_MEMBERS")
+
+
 # Background worker (Celery)
 
 CELERY_BROKER_URL = require_env("CELERY_BROKER_URL")
@@ -223,6 +241,7 @@ REST_FRAMEWORK = {
         'reaction': require_env("THROTTLE_REACTION_RATE"),
         'share': require_env("THROTTLE_SHARE_RATE"),
         'follow': require_env("THROTTLE_FOLLOW_RATE"),
+        'message': require_env("THROTTLE_MESSAGE_RATE"),
     },
 }
 

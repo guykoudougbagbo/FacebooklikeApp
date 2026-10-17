@@ -6,6 +6,7 @@ import AdminsPage from './pages/AdminsPage'
 import HomePage from './pages/HomePage'
 import InvitePage from './pages/InvitePage'
 import LoginPage from './pages/LoginPage'
+import MessagesPage from './pages/MessagesPage'
 import PostPage from './pages/PostPage'
 import SetupPage from './pages/SetupPage'
 import VerifyPage from './pages/VerifyPage'
@@ -27,6 +28,8 @@ export const routes = [
           { index: true, element: <Navigate to="/admin/administrateurs" replace /> },
           { path: 'administrateurs', element: <AdminsPage /> },
           { path: 'activite', element: <ActivityPage /> },
+          { path: 'messages', element: <MessagesPage /> },
+          { path: 'messages/:conversationId', element: <MessagesPage /> },
         ],
       },
       { path: '*', element: <Navigate to="/" replace /> },

@@ -19,5 +19,6 @@
 - Followers get a notification for every new post. The site can be installed on a phone's home screen (needed for notifications on iPhone).
 - Admins can delete comments, reply as "GenZ", and turn comments off on a post.
 - Each post has its own page (`/publication/<id>`); shared links show a preview with the post's text and first image.
+- Admins can message each other privately, one-on-one or in groups, from **Messages** in the header (with an unread badge). Messages arrive instantly; "Vu" / "Vu par N" shows who has read them; people can delete their own messages. A group's manager renames it and adds or removes members; anyone can leave. Only members can see a conversation, and removed admins lose access at once.
 - When the server is unreachable, the site now says "Le serveur ne répond pas. Réessayez dans un instant." instead of a vague error.
 - The whole site is in French and shows the GenZ logo in the header and as the page background, behind see-through content boxes.
