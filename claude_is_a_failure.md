@@ -8,6 +8,7 @@
 - **Tests not isolated from local services** | count: 1 | entries: F-004 | hook: none
 - **Coded from memory instead of the source** | count: 3 | entries: F-002, F-003, F-007 | hook: not hookable (no script can tell whether behaviour was read before it was relied on; rule tightened in Conventions instead)
 - **Staged files in git without being asked** | count: 1 | entries: F-008 | hook: none
+- **Test raced the code it checks** | count: 1 | entries: F-009 | hook: none
 
 ## Entries
 
@@ -89,3 +90,13 @@
 - **How it was caught:** self-review, right after the command ran
 - **Fix:** Unstaged them with `git restore --staged` (the files stay deleted on disk); confirmed nothing is staged. Files are deleted with `rm` from now on.
 - **Pattern:** Staged files in git without being asked
+
+### F-009: Messaging test read the live connection before the app had opened it
+
+- **Date:** 2026-10-16
+- **Section:** Pillars of Development (Testing)
+- **Rule broken:** none: a new rule is needed (a test must wait for anything the app does after the page first shows).
+- **What happened:** In step 6 I wrote messaging tests that took the live connection right after the Messages link appeared. The app opens that connection in an effect, which runs just after the page shows, so on the slower GitHub machine one test found no connection and failed (`Cannot read properties of undefined (reading 'serverClose')`) on the step 7 push.
+- **How it was caught:** failed CI run 38993710927 (frontend job)
+- **Fix:** Added `FakeSocket.opened()`, which waits for the connection, and used it in all four tests. Reproduced the failure locally by delaying the connection 50 ms: the old tests fail, the fixed ones pass; app code unchanged.
+- **Pattern:** Test raced the code it checks

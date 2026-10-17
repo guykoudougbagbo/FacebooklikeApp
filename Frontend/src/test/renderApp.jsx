@@ -1,6 +1,6 @@
 import { cleanup, render } from '@testing-library/react'
 import { createMemoryRouter, RouterProvider } from 'react-router'
-import { afterEach, beforeEach, vi } from 'vitest'
+import { afterEach, beforeEach, expect, vi } from 'vitest'
 import { AuthProvider } from '../auth/AuthProvider'
 import { VisitorViewProvider } from '../auth/VisitorView'
 import { MessagingProvider } from '../messaging/MessagingProvider'
@@ -92,6 +92,12 @@ export class FakeSocket {
 
   static latest() {
     return FakeSocket.instances.at(-1)
+  }
+
+  /** The app's live connection. It opens in an effect just after the page first shows, so wait for it. */
+  static async opened() {
+    await vi.waitFor(() => expect(FakeSocket.instances.length).toBeGreaterThan(0))
+    return FakeSocket.latest()
   }
 }
 
