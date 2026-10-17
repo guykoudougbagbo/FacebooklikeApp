@@ -15,7 +15,7 @@ Installed with Homebrew from `/opt/homebrew` (the Apple Silicon install, not the
 | FFmpeg | 9 | Converting videos and mixing their sound (the worker runs it) |
 | Celery | 5.6 | Background worker that prepares photos (Python package, uses Redis) |
 | Daphne / Channels | 4.2 / 4.3 | Serves live connections (private messages); `runserver` uses Daphne automatically |
-| Expo | SDK 58 | Phone app (React Native); installed with the app's packages, nothing global |
+| Expo | SDK 57 | Phone app (React Native); installed with the app's packages, nothing global. SDK 57 because Expo Go in the App Store and Google Play only runs SDK 57 until Expo ships the SDK 58 one (announced 2026-10-15 as "within a few weeks"); move up then with `npx expo install expo@^58.0.0 --fix` |
 
 PostgreSQL and Redis run in the background: `brew services list` shows them.
 

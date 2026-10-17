@@ -9,6 +9,7 @@
 - **Coded from memory instead of the source** | count: 3 | entries: F-002, F-003, F-007 | hook: not hookable (no script can tell whether behaviour was read before it was relied on; rule tightened in Conventions instead)
 - **Staged files in git without being asked** | count: 1 | entries: F-008 | hook: none
 - **Test raced the code it checks** | count: 1 | entries: F-009 | hook: none
+- **Picked the newest version without checking it runs where it's needed** | count: 1 | entries: F-010 | hook: none
 
 ## Entries
 
@@ -100,3 +101,13 @@
 - **How it was caught:** failed CI run 38993710927 (frontend job)
 - **Fix:** Added `FakeSocket.opened()`, which waits for the connection, and used it in all four tests. Reproduced the failure locally by delaying the connection 50 ms: the old tests fail, the fixed ones pass; app code unchanged.
 - **Pattern:** Test raced the code it checks
+
+### F-010: Phone app built on Expo SDK 58 before Expo Go for SDK 58 was in the App Store
+
+- **Date:** 2026-10-17
+- **Section:** Conventions
+- **Rule broken:** "Before relying on how a library, framework or tool behaves (defaults, shorthands, headers, what it overwrites), read that behaviour in the installed version's source or docs."
+- **What happened:** In step 7 I chose Expo SDK 58 because it was the newest on npm. The plan was for the user to try the app in Expo Go, but the store version of Expo Go only runs SDK 57 until Expo ships the new one "within a few weeks" (SDK 58 announcement, 2026-10-15). Expo's create-expo docs said new projects still default to SDK 57 "during the SDK 58 transition"; I read that and didn't act on it. The user's iPhone showed "Project is incompatible with this version of Expo Go" and the App Store had no update.
+- **How it was caught:** user report (screenshot of the error; App Store had no update)
+- **Fix:** At the user's choice, moved the app to SDK 57 (expo 57.0.30, versions from Expo's own list for that SDK, pinned exactly), checked every API the app uses against the SDK 57 docs, and reran tests, lint and both bundles. Before choosing a version from now on, check that it runs where the user will run it.
+- **Pattern:** Picked the newest version without checking it runs where it's needed
